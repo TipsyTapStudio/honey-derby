@@ -1,5 +1,5 @@
 import {
-  BATTER_Y, BAT_HITZONE_HEIGHT, BAT_HITZONE_WIDTH,
+  BAT_HITZONE_HEIGHT, BAT_HITZONE_WIDTH,
   SWEET_SPOT_RADIUS, MAX_DISTANCE,
   HR_DISTANCE_THRESHOLD, HIT_DISTANCE_THRESHOLD, FOUL_ANGLE_THRESHOLD
 } from './constants.js';
@@ -10,8 +10,8 @@ import {
  * Returns HitResult or null (no contact).
  */
 export function evaluate(ball, batter) {
-  const batZoneTop = BATTER_Y - BAT_HITZONE_HEIGHT / 2;
-  const batZoneBottom = BATTER_Y + BAT_HITZONE_HEIGHT / 2;
+  const batZoneTop = batter.y - BAT_HITZONE_HEIGHT / 2;
+  const batZoneBottom = batter.y + BAT_HITZONE_HEIGHT / 2;
 
   // Step 1: Ball in Y zone?
   if (ball.y < batZoneTop || ball.y > batZoneBottom) {
@@ -39,7 +39,7 @@ export function evaluate(ball, batter) {
   distance = Math.max(0, Math.round(distance));
 
   // Step 4: Direction angle from Y timing
-  const yDiff = ball.y - BATTER_Y;
+  const yDiff = ball.y - batter.y;
   const halfZone = BAT_HITZONE_HEIGHT / 2;
   const normalizedTiming = Math.max(-1, Math.min(1, yDiff / halfZone));
   const directionAngle = normalizedTiming * 45;
@@ -62,7 +62,7 @@ export function evaluate(ball, batter) {
   } else if (distance >= HIT_DISTANCE_THRESHOLD) {
     judgment = 'HIT';
   } else {
-    judgment = 'OUT';
+    judgment = 'STRIKE';
   }
 
   return {

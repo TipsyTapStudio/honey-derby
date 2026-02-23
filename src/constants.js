@@ -15,11 +15,13 @@ export const PITCHER_Y = 120;
 export const PITCHER_MOUND_RADIUS = 30;
 
 // --- Batter ---
-export const BATTER_X = 240; // 初期X座標
+export const BATTER_X = 200; // 初期X座標（左バッターボックス中央）
 export const BATTER_Y = 600;
 export const BATTER_MOVE_SPEED = 300; // px/sec
-export const BATTER_MIN_X = 100;
-export const BATTER_MAX_X = 380;
+export const BATTER_MIN_X = 180;
+export const BATTER_MAX_X = 218;
+export const BATTER_MIN_Y = 580;
+export const BATTER_MAX_Y = 635;
 
 // --- Ball ---
 export const BALL_SPEED = 450; // px/sec
@@ -30,16 +32,24 @@ export const BALL_END_RADIUS = 14;
 export const COUNTDOWN_STEP_MS = 1000; // 各カウントの表示時間(ms)
 
 // --- Swing Phases ---
-export const SWING_IMPACT_MS = 80;
+export const SWING_IMPACT_MS = 120;
 export const SWING_FOLLOWTHROUGH_MS = 100;
-export const SWING_RECOVERY_MS = 300;
+export const SWING_RECOVERY_MS = 280;
 
 // --- Bat ---
 export const BAT_LENGTH = 50;
 export const BAT_WIDTH = 4;
-export const BAT_IDLE_ANGLE = -30 * (Math.PI / 180);      // -30°
-export const BAT_IMPACT_END_ANGLE = 90 * (Math.PI / 180);  // +90°
-export const BAT_FOLLOW_END_ANGLE = 120 * (Math.PI / 180); // +120°
+export const BAT_IDLE_ANGLE = -120 * (Math.PI / 180);      // -120° (11時方向)
+export const BAT_IMPACT_END_ANGLE = -360 * (Math.PI / 180); // -360° (3時方向 = ミートポイント)
+export const BAT_FOLLOW_END_ANGLE = -480 * (Math.PI / 180); // -480° (11時方向 = 振り抜き終点)
+
+// --- Batter Box (描画用) ---
+export const BATTER_BOX_L_X1 = 178;
+export const BATTER_BOX_L_X2 = 222;
+export const BATTER_BOX_R_X1 = 258;
+export const BATTER_BOX_R_X2 = 302;
+export const BATTER_BOX_TOP_Y = 575;
+export const BATTER_BOX_BOTTOM_Y = 650;
 
 // --- Hit Detection ---
 export const BAT_HITZONE_WIDTH = 60;  // バット判定幅(px)

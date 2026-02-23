@@ -1,5 +1,5 @@
 import {
-  PITCHER_X, PITCHER_Y, BATTER_Y, BATTER_X,
+  PITCHER_X, PITCHER_Y, BATTER_Y,
   TOTAL_PITCHES, HR_QUOTA
 } from './constants.js';
 import { Pitcher } from './pitcher.js';
@@ -20,7 +20,7 @@ export class Game {
     this.resultDisplay = new ResultDisplay();
     this.lastTimestamp = 0;
 
-    this.inputState = { left: false, right: false, space: false };
+    this.inputState = { left: false, right: false, up: false, down: false, space: false };
     this.prevSpaceForState = false; // Edge detection for state transitions
 
     // Score
@@ -88,7 +88,7 @@ export class Game {
             xGap: 0,
             direction: 0,
             distance: 0,
-            judgment: 'OUT'
+            judgment: 'STRIKE'
           });
         }
         break;
@@ -145,7 +145,7 @@ export class Game {
         break;
       case 'PITCHING':
         this.ball = new Ball();
-        this.ball.launch(PITCHER_X, PITCHER_Y, this.batter.x, BATTER_Y);
+        this.ball.launch(PITCHER_X, PITCHER_Y, PITCHER_X, BATTER_Y);
         break;
       case 'RESULT':
         // handled by handleHitResult
@@ -201,6 +201,8 @@ export class Game {
   handleKeyDown(e) {
     if (e.code === 'ArrowLeft') this.inputState.left = true;
     if (e.code === 'ArrowRight') this.inputState.right = true;
+    if (e.code === 'ArrowUp') { e.preventDefault(); this.inputState.up = true; }
+    if (e.code === 'ArrowDown') { e.preventDefault(); this.inputState.down = true; }
     if (e.code === 'Space') {
       e.preventDefault();
       this.inputState.space = true;
@@ -210,6 +212,8 @@ export class Game {
   handleKeyUp(e) {
     if (e.code === 'ArrowLeft') this.inputState.left = false;
     if (e.code === 'ArrowRight') this.inputState.right = false;
+    if (e.code === 'ArrowUp') this.inputState.up = false;
+    if (e.code === 'ArrowDown') this.inputState.down = false;
     if (e.code === 'Space') this.inputState.space = false;
   }
 }

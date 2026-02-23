@@ -10,4 +10,5 @@ const game = new Game(canvas);
 window.addEventListener('keydown', (e) => game.handleKeyDown(e));
 window.addEventListener('keyup', (e) => game.handleKeyUp(e));
 
+window._game = game; // expose for debugging
 game.start();

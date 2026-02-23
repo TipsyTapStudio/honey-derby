@@ -8,7 +8,10 @@ import {
   COLOR_BALL, COLOR_BALL_OUTLINE,
   SCOREBOARD_X, SCOREBOARD_Y, SCOREBOARD_WIDTH, SCOREBOARD_HEIGHT,
   SCOREBOARD_BG, SCOREBOARD_BORDER,
-  HR_QUOTA
+  HR_QUOTA,
+  BATTER_BOX_L_X1, BATTER_BOX_L_X2,
+  BATTER_BOX_R_X1, BATTER_BOX_R_X2,
+  BATTER_BOX_TOP_Y, BATTER_BOX_BOTTOM_Y
 } from './constants.js';
 
 export function clearCanvas(ctx) {
@@ -46,6 +49,24 @@ export function drawField(ctx) {
   ctx.lineTo(225, 635);
   ctx.closePath();
   ctx.fill();
+
+  // Batter boxes (chalk lines)
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8, 4]);
+
+  // Left batter's box
+  const lw = BATTER_BOX_L_X2 - BATTER_BOX_L_X1;
+  const bh = BATTER_BOX_BOTTOM_Y - BATTER_BOX_TOP_Y;
+  ctx.strokeRect(BATTER_BOX_L_X1, BATTER_BOX_TOP_Y, lw, bh);
+
+  // Right batter's box
+  const rw = BATTER_BOX_R_X2 - BATTER_BOX_R_X1;
+  ctx.strokeRect(BATTER_BOX_R_X1, BATTER_BOX_TOP_Y, rw, bh);
+
+  ctx.setLineDash([]);
+  ctx.restore();
 }
 
 export function drawPitcher(ctx, pitcher) {
@@ -235,8 +256,8 @@ export function drawResult(ctx, resultDisplay) {
       text = 'ファール';
       color = '#FFAA00';
       break;
-    case 'OUT':
-      text = 'アウト';
+    case 'STRIKE':
+      text = 'ストライク';
       color = '#FF4444';
       break;
     default:

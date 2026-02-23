@@ -1,0 +1,215 @@
+import {
+  PITCHER_X, PITCHER_Y, BATTER_Y, BATTER_X,
+  TOTAL_PITCHES, HR_QUOTA
+} from './constants.js';
+import { Pitcher } from './pitcher.js';
+import { Batter } from './batter.js';
+import { Ball } from './ball.js';
+import { ResultDisplay } from './resultDisplay.js';
+import * as HitDetector from './hitDetector.js';
+import * as Renderer from './renderer.js';
+
+export class Game {
+  constructor(canvas) {
+    this.canvas = canvas;
+    this.ctx = canvas.getContext('2d');
+    this.state = 'READY'; // READY | COUNTDOWN | PITCHING | RESULT | GAME_OVER
+    this.pitcher = new Pitcher();
+    this.batter = new Batter();
+    this.ball = null;
+    this.resultDisplay = new ResultDisplay();
+    this.lastTimestamp = 0;
+
+    this.inputState = { left: false, right: false, space: false };
+    this.prevSpaceForState = false; // Edge detection for state transitions
+
+    // Score
+    this.homeRuns = 0;
+    this.pitchCount = 0;
+    this.remainingPitches = TOTAL_PITCHES;
+    this.cleared = false;
+  }
+
+  start() {
+    this.lastTimestamp = performance.now();
+    requestAnimationFrame((ts) => this.loop(ts));
+  }
+
+  loop(timestamp) {
+    let dt = (timestamp - this.lastTimestamp) / 1000;
+    dt = Math.min(dt, 0.05); // Clamp to prevent spiral of death
+    this.lastTimestamp = timestamp;
+
+    this.update(dt);
+    this.render();
+
+    requestAnimationFrame((ts) => this.loop(ts));
+  }
+
+  update(dt) {
+    const spacePressed = this.inputState.space && !this.prevSpaceForState;
+
+    switch (this.state) {
+      case 'READY':
+        // Wait for space to start (rising edge)
+        if (spacePressed) {
+          this.transitionTo('COUNTDOWN');
+        }
+        break;
+
+      case 'COUNTDOWN':
+        this.pitcher.updateCountdown(dt);
+        this.batter.update(dt, this.inputState);
+        if (this.pitcher.isCountdownComplete()) {
+          this.transitionTo('PITCHING');
+        }
+        break;
+
+      case 'PITCHING':
+        this.ball.update(dt);
+        this.batter.update(dt, this.inputState);
+
+        // Check for hit during Impact phase
+        if (this.batter.isInImpactPhase() && this.ball && this.ball.active) {
+          const result = HitDetector.evaluate(this.ball, this.batter);
+          if (result) {
+            this.ball.active = false;
+            this.handleHitResult(result);
+            break;
+          }
+        }
+
+        // Ball passed batter zone (miss)
+        if (this.ball && this.ball.active && this.ball.isPastBatter()) {
+          this.ball.active = false;
+          this.handleHitResult({
+            hit: false,
+            timing: 'none',
+            xGap: 0,
+            direction: 0,
+            distance: 0,
+            judgment: 'OUT'
+          });
+        }
+        break;
+
+      case 'RESULT':
+        this.resultDisplay.update(dt);
+        if (this.resultDisplay.isComplete()) {
+          if (this.remainingPitches > 0) {
+            this.transitionTo('COUNTDOWN');
+          } else {
+            this.cleared = this.homeRuns >= HR_QUOTA;
+            this.transitionTo('GAME_OVER');
+          }
+        }
+        break;
+
+      case 'GAME_OVER':
+        // Wait for space to retry (rising edge)
+        if (spacePressed) {
+          this.resetGame();
+          this.transitionTo('COUNTDOWN');
+        }
+        break;
+    }
+
+    this.prevSpaceForState = this.inputState.space;
+  }
+
+  handleHitResult(result) {
+    this.pitchCount++;
+    this.remainingPitches = TOTAL_PITCHES - this.pitchCount;
+
+    if (result.judgment === 'HOME_RUN') {
+      this.homeRuns++;
+    }
+
+    // FOUL does not count as a pitch (does not reduce remaining)
+    if (result.judgment === 'FOUL') {
+      this.pitchCount--;
+      this.remainingPitches = TOTAL_PITCHES - this.pitchCount;
+    }
+
+    console.log(`[PITCH ${this.pitchCount}] ${result.judgment} | timing: ${result.timing} | xGap: ${result.xGap}px | angle: ${result.direction}° | distance: ${result.distance}m`);
+
+    this.resultDisplay.show(result);
+    this.state = 'RESULT';
+  }
+
+  transitionTo(newState) {
+    switch (newState) {
+      case 'COUNTDOWN':
+        this.pitcher.reset();
+        this.ball = null;
+        break;
+      case 'PITCHING':
+        this.ball = new Ball();
+        this.ball.launch(PITCHER_X, PITCHER_Y, this.batter.x, BATTER_Y);
+        break;
+      case 'RESULT':
+        // handled by handleHitResult
+        break;
+      case 'GAME_OVER':
+        break;
+    }
+    this.state = newState;
+  }
+
+  resetGame() {
+    this.homeRuns = 0;
+    this.pitchCount = 0;
+    this.remainingPitches = TOTAL_PITCHES;
+    this.cleared = false;
+    this.batter.reset();
+    this.ball = null;
+  }
+
+  render() {
+    Renderer.clearCanvas(this.ctx);
+    Renderer.drawField(this.ctx);
+    Renderer.drawPitcher(this.ctx, this.pitcher);
+    Renderer.drawBatter(this.ctx, this.batter);
+
+    if (this.ball && this.ball.active) {
+      Renderer.drawBall(this.ctx, this.ball);
+    }
+
+    // Scoreboard (always visible)
+    Renderer.drawScoreboard(this.ctx, {
+      homeRuns: this.homeRuns,
+      remainingPitches: this.remainingPitches
+    });
+
+    // State-specific overlays
+    switch (this.state) {
+      case 'READY':
+        Renderer.drawReady(this.ctx);
+        break;
+      case 'COUNTDOWN':
+        Renderer.drawCountdown(this.ctx, this.pitcher.countdownValue);
+        break;
+      case 'RESULT':
+        Renderer.drawResult(this.ctx, this.resultDisplay);
+        break;
+      case 'GAME_OVER':
+        Renderer.drawGameOver(this.ctx, this.cleared);
+        break;
+    }
+  }
+
+  handleKeyDown(e) {
+    if (e.code === 'ArrowLeft') this.inputState.left = true;
+    if (e.code === 'ArrowRight') this.inputState.right = true;
+    if (e.code === 'Space') {
+      e.preventDefault();
+      this.inputState.space = true;
+    }
+  }
+
+  handleKeyUp(e) {
+    if (e.code === 'ArrowLeft') this.inputState.left = false;
+    if (e.code === 'ArrowRight') this.inputState.right = false;
+    if (e.code === 'Space') this.inputState.space = false;
+  }
+}

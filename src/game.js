@@ -1,6 +1,6 @@
 import {
   PITCHER_X, PITCHER_Y, HOME_PLATE_Y,
-  TOTAL_PITCHES, HR_QUOTA
+  TOTAL_PITCHES, HR_QUOTA, CANVAS_HEIGHT
 } from './constants.js';
 import { Pitcher } from './pitcher.js';
 import { Batter } from './batter.js';
@@ -77,8 +77,8 @@ export class Game {
         this.ball.update(dt);
         this.batter.update(dt, this.inputState);
 
-        // Check for hit during Impact phase
-        if (this.batter.isInImpactPhase() && this.ball && this.ball.active) {
+        // Check for hit during extended hit window (impact + early followthrough)
+        if (this.batter.isInHitWindow() && this.ball && this.ball.active) {
           const result = HitDetector.evaluate(this.ball, this.batter);
           if (result) {
             this.ball.active = false;
@@ -87,9 +87,9 @@ export class Game {
           }
         }
 
-        // Ball passed batter zone (miss)
+        // Ball passed batter zone (miss) — keep ball alive for pass-through animation
         if (this.ball && this.ball.active && this.ball.isPastBatter()) {
-          this.ball.active = false;
+          // Don't set ball.active = false — let ball continue to screen bottom
           // TODO: audioManager.play('se_strike')
           this.handleHitResult({
             hit: false,
@@ -109,6 +109,13 @@ export class Game {
         // Update ball flight animation
         if (this.ballFlight && this.ballFlight.active) {
           this.ballFlight.update(dt);
+        }
+        // Update ball pass-through (strike: ball continues to screen bottom)
+        if (this.ball && this.ball.active) {
+          this.ball.update(dt);
+          if (this.ball.y > CANVAS_HEIGHT + 50) {
+            this.ball.active = false;
+          }
         }
         if (this.resultDisplay.isComplete()) {
           this.ballFlight = null;
@@ -171,6 +178,8 @@ export class Game {
         this.pitcher.reset();
         this.ball = null;
         this.ballFlight = null;
+        // Sync batter's prevSpace to prevent auto-swing on first frame
+        this.batter.prevSpace = this.inputState.space;
         break;
       case 'PITCHING':
         this.ball = new Ball();

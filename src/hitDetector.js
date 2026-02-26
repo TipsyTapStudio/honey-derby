@@ -1,7 +1,8 @@
 import {
   BAT_HITZONE_HEIGHT, BAT_HITZONE_WIDTH,
   SWEET_SPOT_RADIUS, MAX_DISTANCE,
-  HR_DISTANCE_THRESHOLD, HIT_DISTANCE_THRESHOLD, FOUL_ANGLE_THRESHOLD
+  HR_DISTANCE_THRESHOLD, HIT_DISTANCE_THRESHOLD, FOUL_ANGLE_THRESHOLD,
+  BAT_IMPACT_END_ANGLE
 } from './constants.js';
 
 /**
@@ -38,16 +39,19 @@ export function evaluate(ball, batter) {
   }
   distance = Math.max(0, Math.round(distance));
 
-  // Step 4: Direction angle from Y timing
-  const yDiff = ball.y - batter.y;
-  const halfZone = BAT_HITZONE_HEIGHT / 2;
-  const normalizedTiming = Math.max(-1, Math.min(1, yDiff / halfZone));
-  const directionAngle = normalizedTiming * 45;
+  // Step 4: Direction angle from bat angle (physical consistency)
+  // batAngle at horizontal (impact end) = BAT_IMPACT_END_ANGLE (-360° = -2π)
+  // deviation > 0 → bat hasn't reached horizontal → pull (left, negative angle)
+  // deviation = 0 → bat exactly horizontal → center (0°)
+  // deviation < 0 → bat past horizontal → push (right, positive angle)
+  const deviationRad = batter.batAngle - BAT_IMPACT_END_ANGLE;
+  const deviationDeg = deviationRad * (180 / Math.PI);
+  const directionAngle = Math.max(-45, Math.min(45, -deviationDeg * 0.6));
 
   let timing;
-  if (Math.abs(yDiff) <= 5) {
+  if (Math.abs(deviationDeg) <= 5) {
     timing = 'just';
-  } else if (yDiff < 0) {
+  } else if (deviationDeg > 0) {
     timing = 'early';
   } else {
     timing = 'late';

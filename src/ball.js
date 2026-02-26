@@ -36,7 +36,7 @@ export class Ball {
 
     const distanceThisFrame = this.speed * dt;
     this.progress += distanceThisFrame / this.totalDistance;
-    this.progress = Math.min(this.progress, 1.2); // allow slight overshoot
+    this.progress = Math.min(this.progress, 2.5); // allow ball to pass through to screen bottom
 
     this.x = this.startX + (this.targetX - this.startX) * this.progress;
     this.y = this.startY + (this.targetY - this.startY) * this.progress;

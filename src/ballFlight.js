@@ -24,6 +24,7 @@ export class BallFlight {
     this.peakY = 0;       // Bezier control point Y (lower = higher on screen)
     this.startRadius = BALL_END_RADIUS;
     this.endRadius = 2;
+    this.curvedMidX = undefined; // Override for foul curve (undefined = use default midX)
   }
 
   /**
@@ -41,17 +42,33 @@ export class BallFlight {
     this.x = ballX;        // Initialize position to avoid (0,0) on first frame
     this.y = ballY;
     this.startRadius = BALL_END_RADIUS;
+    this.curvedMidX = undefined; // Reset curve override
 
     const dir = hitResult.direction || 0; // angle in degrees (-45 to +45)
 
     switch (hitResult.judgment) {
-      case 'HOME_RUN':
-        this.duration = BALL_FLIGHT_HR_DURATION;
-        this.endX = CANVAS_WIDTH / 2 + dir * 4;   // 大きなL/Rスプレッド (旧 dir*1.5)
-        this.endY = -50;          // off-screen top (into the stands)
-        this.peakY = 100;         // high arc
-        this.endRadius = 2;       // tiny (far away)
+      case 'HOME_RUN': {
+        const dist = hitResult.distance; // 100~160m
+        const t = (dist - 100) / 60;    // 0.0 (100m) ~ 1.0 (160m) normalized
+
+        this.duration = 1200 + t * 400;  // 1200~1600ms (longer for bigger HRs)
+
+        // peakY: Bezier control point (lower value = higher arc on screen)
+        this.peakY = -100 - t * 200;     // -100 (short HR) ~ -300 (moonshot)
+
+        // endY: landing point (must be > peakY for descent arc)
+        if (t < 0.75) {
+          // 100~145m: lands in stands (descent visible on screen)
+          this.endY = 300 - t * 300;     // 300 (barely HR) ~ 75 (deep stands)
+        } else {
+          // 145~160m: 場外ホームラン (flies off screen)
+          this.endY = 75 - (t - 0.75) * 500; // 75 → -50 (off screen)
+        }
+
+        this.endX = CANVAS_WIDTH / 2 + dir * 4;
+        this.endRadius = 6 - t * 4;     // 6 (short HR) ~ 2 (moonshot)
         break;
+      }
 
       case 'HIT':
         this.duration = BALL_FLIGHT_HIT_DURATION;
@@ -61,14 +78,19 @@ export class BallFlight {
         this.endRadius = 4;
         break;
 
-      case 'FOUL':
+      case 'FOUL': {
         this.duration = BALL_FLIGHT_FOUL_DURATION;
-        // Fly off left or right based on direction sign (more dramatic)
-        this.endX = dir < 0 ? -80 : CANVAS_WIDTH + 80;
-        this.endY = 250;          // やや高め (旧300)
-        this.peakY = 150;         // より劇的なアーク (旧200)
-        this.endRadius = 4;       // (旧5)
+        const isLeft = dir < 0;
+        this.endX = isLeft ? -120 : CANVAS_WIDTH + 120;  // 画面外へ
+        this.endY = 250;
+        this.peakY = 100;         // 高い弧
+        this.endRadius = 4;
+
+        // ★ Curve: bias midX toward foul direction for outward curve
+        // Ball starts fair-ish then curves sharply foul
+        this.curvedMidX = this.startX + (this.endX - this.startX) * 0.65;
         break;
+      }
 
       default:
         // Weak contact — should not normally reach here
@@ -91,7 +113,9 @@ export class BallFlight {
 
     // Quadratic Bezier: P = (1-t)^2 * P0 + 2(1-t)t * P1 + t^2 * P2
     // P0 = start, P1 = control (midX, peakY), P2 = end
-    const midX = (this.startX + this.endX) / 2;
+    const midX = this.curvedMidX !== undefined
+      ? this.curvedMidX
+      : (this.startX + this.endX) / 2;
 
     this.x = (1 - t) * (1 - t) * this.startX
            + 2 * (1 - t) * t * midX
@@ -117,5 +141,6 @@ export class BallFlight {
     this.active = false;
     this.elapsed = 0;
     this.progress = 0;
+    this.curvedMidX = undefined;
   }
 }

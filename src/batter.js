@@ -105,6 +105,16 @@ export class Batter {
     return this.swingState === 'impact';
   }
 
+  /**
+   * Extended hit window: impact phase + first 50ms of followthrough.
+   * Allows push-direction hits (bat past horizontal).
+   */
+  isInHitWindow() {
+    if (this.swingState === 'impact') return true;
+    if (this.swingState === 'followthrough' && this.swingTimer < 50) return true;
+    return false;
+  }
+
   getBatCenterX() {
     // The bat's sweet spot is at the tip, offset from batter center
     return this.x + Math.cos(this.batAngle) * BAT_TIP_OFFSET;

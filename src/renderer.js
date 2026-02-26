@@ -1,123 +1,39 @@
 import {
-  CANVAS_WIDTH, CANVAS_HEIGHT, FIELD_DIRT_Y,
-  PITCHER_MOUND_RADIUS,
-  BAT_LENGTH, BAT_WIDTH, BAT_IDLE_ANGLE,
-  COLOR_GRASS, COLOR_DIRT, COLOR_MOUND, COLOR_HOME_PLATE,
-  COLOR_PITCHER_BODY, COLOR_PITCHER_HEAD,
-  COLOR_BATTER_BODY, COLOR_BATTER_HEAD, COLOR_BAT,
+  CANVAS_WIDTH, CANVAS_HEIGHT,
+  MOAI_X, MOAI_Y,
+  BATTER_SPRITE_W, BATTER_SPRITE_H,
+  BATTER_ANCHOR_X, BATTER_ANCHOR_Y,
   COLOR_BALL, COLOR_BALL_OUTLINE,
   SCOREBOARD_X, SCOREBOARD_Y, SCOREBOARD_WIDTH, SCOREBOARD_HEIGHT,
   SCOREBOARD_BG, SCOREBOARD_BORDER,
-  HR_QUOTA,
-  BATTER_BOX_L_X1, BATTER_BOX_L_X2,
-  BATTER_BOX_R_X1, BATTER_BOX_R_X2,
-  BATTER_BOX_TOP_Y, BATTER_BOX_BOTTOM_Y
+  HR_QUOTA
 } from './constants.js';
 
-export function clearCanvas(ctx) {
-  ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+// =============================================
+// Background & Sprites
+// =============================================
+
+export function drawBackground(ctx, bgCanvas) {
+  ctx.drawImage(bgCanvas, 0, 0);
 }
 
-export function drawField(ctx) {
-  // Grass (upper portion)
-  ctx.fillStyle = COLOR_GRASS;
-  ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-  // Dirt/sand area (lower portion)
-  ctx.fillStyle = COLOR_DIRT;
-  ctx.beginPath();
-  ctx.moveTo(0, FIELD_DIRT_Y);
-  ctx.quadraticCurveTo(CANVAS_WIDTH / 2, FIELD_DIRT_Y - 60, CANVAS_WIDTH, FIELD_DIRT_Y);
-  ctx.lineTo(CANVAS_WIDTH, CANVAS_HEIGHT);
-  ctx.lineTo(0, CANVAS_HEIGHT);
-  ctx.closePath();
-  ctx.fill();
-
-  // Pitcher mound
-  ctx.fillStyle = COLOR_MOUND;
-  ctx.beginPath();
-  ctx.ellipse(240, 120, PITCHER_MOUND_RADIUS, PITCHER_MOUND_RADIUS * 0.5, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Home plate
-  ctx.fillStyle = COLOR_HOME_PLATE;
-  ctx.beginPath();
-  ctx.moveTo(240, 620);
-  ctx.lineTo(255, 635);
-  ctx.lineTo(248, 650);
-  ctx.lineTo(232, 650);
-  ctx.lineTo(225, 635);
-  ctx.closePath();
-  ctx.fill();
-
-  // Batter boxes (chalk lines)
-  ctx.save();
-  ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-  ctx.lineWidth = 2;
-  ctx.setLineDash([8, 4]);
-
-  // Left batter's box
-  const lw = BATTER_BOX_L_X2 - BATTER_BOX_L_X1;
-  const bh = BATTER_BOX_BOTTOM_Y - BATTER_BOX_TOP_Y;
-  ctx.strokeRect(BATTER_BOX_L_X1, BATTER_BOX_TOP_Y, lw, bh);
-
-  // Right batter's box
-  const rw = BATTER_BOX_R_X2 - BATTER_BOX_R_X1;
-  ctx.strokeRect(BATTER_BOX_R_X1, BATTER_BOX_TOP_Y, rw, bh);
-
-  ctx.setLineDash([]);
-  ctx.restore();
+export function drawMoai(ctx, moaiImg) {
+  const dx = MOAI_X - moaiImg.width / 2;
+  const dy = MOAI_Y;
+  ctx.drawImage(moaiImg, dx, dy);
 }
 
-export function drawPitcher(ctx, pitcher) {
-  const px = pitcher.x;
-  const py = pitcher.y;
-
-  // Body
-  ctx.fillStyle = COLOR_PITCHER_BODY;
-  ctx.fillRect(px - 10, py - 15, 20, 35);
-
-  // Head
-  ctx.fillStyle = COLOR_PITCHER_HEAD;
-  ctx.beginPath();
-  ctx.arc(px, py - 25, 10, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Cap
-  ctx.fillStyle = COLOR_PITCHER_BODY;
-  ctx.fillRect(px - 12, py - 35, 24, 6);
+export function drawBatterSprite(ctx, batter, batterFrames) {
+  const frame = batterFrames[batter.frameIndex];
+  if (!frame) return;
+  const dx = batter.x - BATTER_ANCHOR_X;
+  const dy = batter.y - BATTER_ANCHOR_Y;
+  ctx.drawImage(frame, dx, dy, BATTER_SPRITE_W, BATTER_SPRITE_H);
 }
 
-export function drawBatter(ctx, batter) {
-  const bx = batter.x;
-  const by = batter.y;
-
-  // Body
-  ctx.fillStyle = COLOR_BATTER_BODY;
-  ctx.fillRect(bx - 12, by - 20, 24, 40);
-
-  // Head
-  ctx.fillStyle = COLOR_BATTER_HEAD;
-  ctx.beginPath();
-  ctx.arc(bx, by - 30, 12, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Helmet
-  ctx.fillStyle = COLOR_BATTER_BODY;
-  ctx.beginPath();
-  ctx.arc(bx, by - 32, 12, Math.PI, Math.PI * 2);
-  ctx.fill();
-
-  // Bat
-  ctx.save();
-  ctx.translate(bx, by - 10);
-  ctx.rotate(batter.batAngle);
-  ctx.fillStyle = COLOR_BAT;
-  ctx.fillRect(0, -BAT_WIDTH / 2, BAT_LENGTH, BAT_WIDTH);
-  // Bat knob
-  ctx.fillRect(BAT_LENGTH - 2, -BAT_WIDTH, 6, BAT_WIDTH * 2);
-  ctx.restore();
-}
+// =============================================
+// Ball
+// =============================================
 
 export function drawBall(ctx, ball) {
   if (!ball || !ball.active) return;
@@ -138,6 +54,10 @@ export function drawBall(ctx, ball) {
   ctx.stroke();
 }
 
+// =============================================
+// UI Overlays
+// =============================================
+
 export function drawCountdown(ctx, countdownValue) {
   if (countdownValue <= 0) return;
 
@@ -146,14 +66,17 @@ export function drawCountdown(ctx, countdownValue) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
+  // Position above moai's head
+  const countdownY = MOAI_Y - 20;
+
   // Outline
   ctx.strokeStyle = '#000000';
   ctx.lineWidth = 6;
-  ctx.strokeText(String(countdownValue), 240, 300);
+  ctx.strokeText(String(countdownValue), CANVAS_WIDTH / 2, countdownY);
 
   // Fill
   ctx.fillStyle = '#ffffff';
-  ctx.fillText(String(countdownValue), 240, 300);
+  ctx.fillText(String(countdownValue), CANVAS_WIDTH / 2, countdownY);
   ctx.restore();
 }
 

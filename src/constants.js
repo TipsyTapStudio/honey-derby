@@ -6,16 +6,16 @@
 export const CANVAS_WIDTH = 480;
 export const CANVAS_HEIGHT = 720;
 
-// --- Field ---
-export const FIELD_DIRT_Y = 450; // 芝と砂の境界Y座標
+// --- Moai (Pitching Machine) ---
+export const MOAI_X = 240;          // モアイ中心X
+export const MOAI_Y = 175;          // モアイスプライト上端Y (※Preview で微調整)
 
-// --- Pitcher ---
+// --- Pitcher (Ball Origin = Moai's Mouth) ---
 export const PITCHER_X = 240;
-export const PITCHER_Y = 120;
-export const PITCHER_MOUND_RADIUS = 30;
+export const PITCHER_Y = 285;       // モアイの口のY座標 (※Preview で微調整)
 
 // --- Batter ---
-export const BATTER_X = 200; // 初期X座標（左バッターボックス中央）
+export const BATTER_X = 200;        // 初期X座標（左バッターボックス中央）
 export const BATTER_Y = 600;
 export const BATTER_MOVE_SPEED = 300; // px/sec
 export const BATTER_MIN_X = 180;
@@ -23,8 +23,14 @@ export const BATTER_MAX_X = 218;
 export const BATTER_MIN_Y = 580;
 export const BATTER_MAX_Y = 635;
 
+// --- Batter Sprite ---
+export const BATTER_SPRITE_W = 180;   // リサイズ後の幅
+export const BATTER_SPRITE_H = 119;   // リサイズ後の高さ
+export const BATTER_ANCHOR_X = 81;    // スプライト内キャラ中心X (※Preview で微調整)
+export const BATTER_ANCHOR_Y = 100;   // スプライト内キャラ足元Y (※Preview で微調整)
+
 // --- Ball ---
-export const BALL_SPEED = 450; // px/sec
+export const BALL_SPEED = 340;        // px/sec (旧450, 飛距離短縮に合わせて調整)
 export const BALL_START_RADIUS = 4;
 export const BALL_END_RADIUS = 14;
 
@@ -36,20 +42,10 @@ export const SWING_IMPACT_MS = 120;
 export const SWING_FOLLOWTHROUGH_MS = 100;
 export const SWING_RECOVERY_MS = 280;
 
-// --- Bat ---
-export const BAT_LENGTH = 50;
-export const BAT_WIDTH = 4;
+// --- Bat (Hit Detection) ---
 export const BAT_IDLE_ANGLE = -120 * (Math.PI / 180);      // -120° (11時方向)
-export const BAT_IMPACT_END_ANGLE = -360 * (Math.PI / 180); // -360° (3時方向 = ミートポイント)
-export const BAT_FOLLOW_END_ANGLE = -480 * (Math.PI / 180); // -480° (11時方向 = 振り抜き終点)
-
-// --- Batter Box (描画用) ---
-export const BATTER_BOX_L_X1 = 178;
-export const BATTER_BOX_L_X2 = 222;
-export const BATTER_BOX_R_X1 = 258;
-export const BATTER_BOX_R_X2 = 302;
-export const BATTER_BOX_TOP_Y = 575;
-export const BATTER_BOX_BOTTOM_Y = 650;
+export const BAT_IMPACT_END_ANGLE = -360 * (Math.PI / 180); // -360° (3時 = ミートポイント)
+export const BAT_FOLLOW_END_ANGLE = -480 * (Math.PI / 180); // -480° (11時 = 振り抜き終点)
 
 // --- Hit Detection ---
 export const BAT_HITZONE_WIDTH = 60;  // バット判定幅(px)
@@ -67,16 +63,7 @@ export const RESULT_DISPLAY_MS = 2000;
 export const TOTAL_PITCHES = 10;
 export const HR_QUOTA = 3;
 
-// --- Colors ---
-export const COLOR_GRASS = '#2d8a4e';
-export const COLOR_DIRT = '#c4a060';
-export const COLOR_MOUND = '#a08040';
-export const COLOR_HOME_PLATE = '#e0e0e0';
-export const COLOR_PITCHER_BODY = '#d4524d';
-export const COLOR_PITCHER_HEAD = '#f5c6a0';
-export const COLOR_BATTER_BODY = '#4a7ec4';
-export const COLOR_BATTER_HEAD = '#f5c6a0';
-export const COLOR_BAT = '#8B6914';
+// --- Ball Colors ---
 export const COLOR_BALL = '#ffffff';
 export const COLOR_BALL_OUTLINE = '#333333';
 

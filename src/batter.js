@@ -13,6 +13,7 @@ export class Batter {
     this.swingTimer = 0;
     this.batAngle = BAT_IDLE_ANGLE;
     this.prevSpace = false;
+    this.frameIndex = 0; // Sprite frame index (0~10)
   }
 
   update(dt, inputState) {
@@ -71,6 +72,32 @@ export class Batter {
         this.batAngle = BAT_IDLE_ANGLE;
       }
     }
+
+    // Update sprite frame index
+    this._updateFrameIndex();
+  }
+
+  /**
+   * Map swing state + progress → sprite frame index (0~10)
+   *
+   * swing_01 (idx 0)  → Idle
+   * swing_02~05 (1~4) → Impact (4 frames across 120ms)
+   * swing_06~08 (5~7) → Follow-through (3 frames across 100ms)
+   * swing_09~11 (8~10) → Recovery (3 frames across 280ms)
+   */
+  _updateFrameIndex() {
+    if (this.swingState === 'idle') {
+      this.frameIndex = 0;
+    } else if (this.swingState === 'impact') {
+      const p = Math.min(this.swingTimer / SWING_IMPACT_MS, 0.999);
+      this.frameIndex = 1 + Math.floor(p * 4);  // 1,2,3,4
+    } else if (this.swingState === 'followthrough') {
+      const p = Math.min(this.swingTimer / SWING_FOLLOWTHROUGH_MS, 0.999);
+      this.frameIndex = 5 + Math.floor(p * 3);  // 5,6,7
+    } else if (this.swingState === 'recovery') {
+      const p = Math.min(this.swingTimer / SWING_RECOVERY_MS, 0.999);
+      this.frameIndex = 8 + Math.floor(p * 3);  // 8,9,10
+    }
   }
 
   isInImpactPhase() {
@@ -90,5 +117,6 @@ export class Batter {
     this.swingTimer = 0;
     this.batAngle = BAT_IDLE_ANGLE;
     this.prevSpace = false;
+    this.frameIndex = 0;
   }
 }

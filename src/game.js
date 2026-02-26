@@ -10,9 +10,10 @@ import * as HitDetector from './hitDetector.js';
 import * as Renderer from './renderer.js';
 
 export class Game {
-  constructor(canvas) {
+  constructor(canvas, assets) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
+    this.assets = assets; // { bg, moai, batter[] }
     this.state = 'READY'; // READY | COUNTDOWN | PITCHING | RESULT | GAME_OVER
     this.pitcher = new Pitcher();
     this.batter = new Batter();
@@ -166,11 +167,16 @@ export class Game {
   }
 
   render() {
-    Renderer.clearCanvas(this.ctx);
-    Renderer.drawField(this.ctx);
-    Renderer.drawPitcher(this.ctx, this.pitcher);
-    Renderer.drawBatter(this.ctx, this.batter);
+    // Layer 1: Background image (replaces clearCanvas + drawField)
+    Renderer.drawBackground(this.ctx, this.assets.bg);
 
+    // Layer 2: Moai (pitching machine)
+    Renderer.drawMoai(this.ctx, this.assets.moai);
+
+    // Layer 3: Batter sprite
+    Renderer.drawBatterSprite(this.ctx, this.batter, this.assets.batter);
+
+    // Layer 4: Ball (on top)
     if (this.ball && this.ball.active) {
       Renderer.drawBall(this.ctx, this.ball);
     }

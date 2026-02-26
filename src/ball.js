@@ -1,5 +1,5 @@
 import {
-  BALL_SPEED, BALL_START_RADIUS, BALL_END_RADIUS, HIT_ZONE_CENTER_Y, BAT_HITZONE_HEIGHT
+  BALL_SPEED, BALL_START_RADIUS, BALL_END_RADIUS, BAT_HITZONE_HEIGHT
 } from './constants.js';
 
 export class Ball {
@@ -36,7 +36,7 @@ export class Ball {
 
     const distanceThisFrame = this.speed * dt;
     this.progress += distanceThisFrame / this.totalDistance;
-    this.progress = Math.min(this.progress, 2.5); // allow ball to pass through to screen bottom
+    this.progress = Math.min(this.progress, 3.5); // allow ball to pass through to screen bottom
 
     this.x = this.startX + (this.targetX - this.startX) * this.progress;
     this.y = this.startY + (this.targetY - this.startY) * this.progress;
@@ -45,7 +45,7 @@ export class Ball {
     this.radius = BALL_START_RADIUS + (BALL_END_RADIUS - BALL_START_RADIUS) * Math.min(this.progress, 1);
   }
 
-  isPastBatter() {
-    return this.y > HIT_ZONE_CENTER_Y + BAT_HITZONE_HEIGHT / 2;
+  isPastBatter(batContactY) {
+    return this.y > batContactY + BAT_HITZONE_HEIGHT / 2;
   }
 }

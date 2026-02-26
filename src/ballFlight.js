@@ -71,7 +71,7 @@ export class BallFlight {
           this.endY = 70 - (t - 0.75) * 480; // 70→-50 (moonshot off screen)
         }
 
-        this.endX = CANVAS_WIDTH / 2 + dir * 4;
+        this.endX = CANVAS_WIDTH / 2 + dir * 8;
         this.endRadius = 3 - t * 2.5;     // 3→0.5 (gets very small)
         break;
       }
@@ -158,7 +158,8 @@ export class BallFlight {
   _updateSingleBezier(dt) {
     this.progress = Math.min(this.elapsed / this.duration, 1);
 
-    const t = this.progress;
+    // Ease-out: fast near batter, slow in distance (perspective)
+    const t = Math.pow(this.progress, 0.6);
 
     const midX = this.curvedMidX !== undefined
       ? this.curvedMidX

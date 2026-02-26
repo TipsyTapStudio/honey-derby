@@ -1,8 +1,8 @@
 import {
   BAT_HITZONE_HEIGHT, BAT_HITZONE_WIDTH,
-  SWEET_SPOT_RADIUS, MAX_DISTANCE,
+  SWEET_SPOT_RADIUS, SWEET_SPOT_INSET, MAX_DISTANCE,
   HR_DISTANCE_THRESHOLD, HIT_DISTANCE_THRESHOLD, FOUL_ANGLE_THRESHOLD,
-  BAT_IMPACT_END_ANGLE, HIT_ZONE_CENTER_Y
+  BAT_IMPACT_END_ANGLE
 } from './constants.js';
 
 /**
@@ -11,8 +11,9 @@ import {
  * Returns HitResult or null (no contact).
  */
 export function evaluate(ball, batter) {
-  const batZoneTop = HIT_ZONE_CENTER_Y - BAT_HITZONE_HEIGHT / 2;
-  const batZoneBottom = HIT_ZONE_CENTER_Y + BAT_HITZONE_HEIGHT / 2;
+  const batContactY = batter.getBatContactY();
+  const batZoneTop = batContactY - BAT_HITZONE_HEIGHT / 2;
+  const batZoneBottom = batContactY + BAT_HITZONE_HEIGHT / 2;
 
   // Step 1: Ball in Y zone?
   if (ball.y < batZoneTop || ball.y > batZoneBottom) {
@@ -27,15 +28,27 @@ export function evaluate(ball, batter) {
     return null; // Whiff
   }
 
-  // Step 3: Distance from X gap
+  // Step 3: Distance from X gap (asymmetric sweet spot)
+  // xGap=0 is bat tip. Sweet spot center is SWEET_SPOT_INSET px from tip (toward root).
+  // Root side (rawDist > 0) has steep penalty (詰まり = jammed).
+  // Tip side (rawDist < 0) has gentle penalty.
+  const rawDist = xGap - SWEET_SPOT_INSET;
+  const sweetSpotDist = Math.abs(rawDist);
+  const isRootSide = rawDist > 0;
+
   let distance;
-  if (xGap <= SWEET_SPOT_RADIUS) {
-    const sweetSpotBonus = 1.0 - (xGap / SWEET_SPOT_RADIUS) * 0.1;
-    distance = MAX_DISTANCE * sweetSpotBonus;
+  if (sweetSpotDist <= SWEET_SPOT_RADIUS) {
+    // Within sweet spot zone — mild penalty scaling
+    const penalty = isRootSide ? 0.6 : 0.2;
+    const bonus = 1.0 - (sweetSpotDist / SWEET_SPOT_RADIUS) * penalty;
+    distance = MAX_DISTANCE * bonus;
   } else {
-    const falloffRange = (BAT_HITZONE_WIDTH / 2) - SWEET_SPOT_RADIUS;
-    const falloffProgress = (xGap - SWEET_SPOT_RADIUS) / falloffRange;
-    distance = MAX_DISTANCE * 0.9 * (1 - falloffProgress);
+    // Outside sweet spot — rapid falloff
+    const edgeDist = sweetSpotDist - SWEET_SPOT_RADIUS;
+    const maxOuter = (BAT_HITZONE_WIDTH / 2) - SWEET_SPOT_INSET - SWEET_SPOT_RADIUS;
+    const falloff = Math.min(edgeDist / Math.max(1, maxOuter), 1);
+    const edgeValue = MAX_DISTANCE * (1 - (isRootSide ? 0.6 : 0.2));
+    distance = edgeValue * (1 - falloff);
   }
   distance = Math.max(0, Math.round(distance));
 

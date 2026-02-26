@@ -3,7 +3,7 @@ import {
   BATTER_MIN_X, BATTER_MAX_X, BATTER_MIN_Y, BATTER_MAX_Y,
   BAT_IDLE_ANGLE, BAT_IMPACT_END_ANGLE, BAT_FOLLOW_END_ANGLE,
   SWING_IMPACT_MS, SWING_FOLLOWTHROUGH_MS, SWING_RECOVERY_MS,
-  BAT_TIP_OFFSET
+  BAT_TIP_OFFSET, BAT_CONTACT_Y_OFFSET
 } from './constants.js';
 
 export class Batter {
@@ -118,6 +118,11 @@ export class Batter {
   getBatCenterX() {
     // The bat's sweet spot is at the tip, offset from batter center
     return this.x + Math.cos(this.batAngle) * BAT_TIP_OFFSET;
+  }
+
+  getBatContactY() {
+    // The bat's horizontal swing plane Y, offset above batter's feet
+    return this.y - BAT_CONTACT_Y_OFFSET;
   }
 
   reset() {

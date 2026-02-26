@@ -81,14 +81,18 @@ export class Game {
         if (this.batter.isInHitWindow() && this.ball && this.ball.active) {
           const result = HitDetector.evaluate(this.ball, this.batter);
           if (result) {
-            this.ball.active = false;
+            // For HR/HIT/FOUL: deactivate ball (ballFlight takes over)
+            // For contact-STRIKE: keep ball alive for pass-through animation
+            if (result.judgment !== 'STRIKE') {
+              this.ball.active = false;
+            }
             this.handleHitResult(result);
             break;
           }
         }
 
         // Ball passed batter zone (miss) — keep ball alive for pass-through animation
-        if (this.ball && this.ball.active && this.ball.isPastBatter()) {
+        if (this.ball && this.ball.active && this.ball.isPastBatter(this.batter.getBatContactY())) {
           // Don't set ball.active = false — let ball continue to screen bottom
           // TODO: audioManager.play('se_strike')
           this.handleHitResult({
@@ -212,17 +216,17 @@ export class Game {
     // Layer 2: Moai (pitching machine)
     Renderer.drawMoai(this.ctx, this.assets.moai);
 
-    // Layer 3: Batter sprite
-    Renderer.drawBatterSprite(this.ctx, this.batter, this.assets.batter);
-
-    // Layer 4: Ball (pitched, in flight toward batter)
-    if (this.ball && this.ball.active) {
-      Renderer.drawBall(this.ctx, this.ball);
-    }
-
-    // Layer 5: Ball flight (post-hit trajectory)
+    // Layer 3: Ball flight (post-hit trajectory) — behind batter for depth
     if (this.ballFlight && this.ballFlight.active) {
       Renderer.drawBallFlight(this.ctx, this.ballFlight);
+    }
+
+    // Layer 4: Batter sprite
+    Renderer.drawBatterSprite(this.ctx, this.batter, this.assets.batter);
+
+    // Layer 5: Ball (pitched, in flight toward batter)
+    if (this.ball && this.ball.active) {
+      Renderer.drawBall(this.ctx, this.ball, this.state, this.batter.getBatContactY());
     }
 
     // Scoreboard (always visible)

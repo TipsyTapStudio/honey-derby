@@ -6,7 +6,9 @@ import {
   COLOR_BALL, COLOR_BALL_OUTLINE,
   SCOREBOARD_X, SCOREBOARD_Y, SCOREBOARD_WIDTH, SCOREBOARD_HEIGHT,
   SCOREBOARD_BG, SCOREBOARD_BORDER,
-  HR_QUOTA
+  HR_QUOTA,
+  GROUND_SHADOW_Y,
+  TIMING_HINT_ENABLED, TIMING_HINT_Y_RANGE
 } from './constants.js';
 
 // =============================================
@@ -35,10 +37,44 @@ export function drawBatterSprite(ctx, batter, batterFrames) {
 // Ball
 // =============================================
 
-export function drawBall(ctx, ball) {
+export function drawBall(ctx, ball, gameState, batContactY) {
   if (!ball || !ball.active) return;
 
-  // Ball shadow
+  // Ground shadow — projected onto ground plane, grows as ball approaches
+  const distToGround = GROUND_SHADOW_Y - ball.y;
+  if (distToGround >= 0 && distToGround <= 250) {
+    const proximity = 1.0 - (distToGround / 250);
+    const shadowRadiusX = 6 + proximity * 12;
+    const shadowRadiusY = 2 + proximity * 5;
+    const shadowAlpha = 0.05 + proximity * 0.25;
+    ctx.fillStyle = `rgba(0,0,0,${shadowAlpha})`;
+    ctx.beginPath();
+    ctx.ellipse(ball.x, GROUND_SHADOW_Y, shadowRadiusX, shadowRadiusY, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Timing hint glow — gold glow when ball approaches bat contact zone (PITCHING only)
+  const hintYEnd = batContactY;
+  const hintYStart = batContactY - TIMING_HINT_Y_RANGE;
+  if (TIMING_HINT_ENABLED && gameState === 'PITCHING' &&
+      ball.y >= hintYStart && ball.y <= hintYEnd) {
+    const progress = (ball.y - hintYStart) / TIMING_HINT_Y_RANGE;
+    const glowRadius = ball.radius * (2.5 + progress * 2.0);
+    const alpha = 0.15 + progress * 0.45;
+    const gradient = ctx.createRadialGradient(
+      ball.x, ball.y, ball.radius * 0.5,
+      ball.x, ball.y, glowRadius
+    );
+    gradient.addColorStop(0, `rgba(255, 215, 0, ${alpha})`);
+    gradient.addColorStop(0.5, `rgba(255, 165, 0, ${alpha * 0.5})`);
+    gradient.addColorStop(1, 'rgba(255, 100, 0, 0)');
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, glowRadius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Ball shadow (follows ball — gives volume/depth to the ball itself)
   ctx.fillStyle = 'rgba(0,0,0,0.2)';
   ctx.beginPath();
   ctx.ellipse(ball.x + 2, ball.y + 3, ball.radius * 0.8, ball.radius * 0.4, 0, 0, Math.PI * 2);

@@ -1,5 +1,5 @@
 import {
-  PITCHER_X, PITCHER_Y, BATTER_Y,
+  PITCHER_X, PITCHER_Y, HOME_PLATE_Y,
   TOTAL_PITCHES, HR_QUOTA
 } from './constants.js';
 import { Pitcher } from './pitcher.js';
@@ -174,7 +174,7 @@ export class Game {
         break;
       case 'PITCHING':
         this.ball = new Ball();
-        this.ball.launch(PITCHER_X, PITCHER_Y, PITCHER_X, BATTER_Y);
+        this.ball.launch(PITCHER_X, PITCHER_Y, PITCHER_X, HOME_PLATE_Y);
         break;
       case 'RESULT':
         // handled by handleHitResult

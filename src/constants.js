@@ -14,14 +14,17 @@ export const MOAI_Y = 175;          // モアイスプライト上端Y (※Previ
 export const PITCHER_X = 240;
 export const PITCHER_Y = 285;       // モアイの口のY座標 (※Preview で微調整)
 
+// --- Home Plate ---
+export const HOME_PLATE_Y = 520;    // ホームベースのY座標 (背景画像上の位置)
+
 // --- Batter ---
-export const BATTER_X = 200;        // 初期X座標（左バッターボックス中央）
-export const BATTER_Y = 600;
+export const BATTER_X = 170;        // 初期X座標（左バッターボックス中央）
+export const BATTER_Y = 530;        // 初期Y座標（ホームベースの約10px下）
 export const BATTER_MOVE_SPEED = 300; // px/sec
-export const BATTER_MIN_X = 180;
-export const BATTER_MAX_X = 218;
-export const BATTER_MIN_Y = 580;
-export const BATTER_MAX_Y = 635;
+export const BATTER_MIN_X = 150;
+export const BATTER_MAX_X = 188;
+export const BATTER_MIN_Y = 510;
+export const BATTER_MAX_Y = 565;
 
 // --- Batter Sprite ---
 export const BATTER_SPRITE_W = 360;   // リサイズ後の幅 (旧180, 2倍拡大)
@@ -33,7 +36,7 @@ export const BATTER_ANCHOR_Y = 200;   // スプライト内キャラ足元Y (旧
 export const BAT_TIP_OFFSET = 80;     // バット先端オフセット(px) (旧ハードコード40, 2倍)
 
 // --- Ball ---
-export const BALL_SPEED = 340;        // px/sec (旧450, 飛距離短縮に合わせて調整)
+export const BALL_SPEED = 265;        // px/sec (旅程245px÷265=0.92s ≈ 旧0.93s)
 export const BALL_START_RADIUS = 4;
 export const BALL_END_RADIUS = 14;
 

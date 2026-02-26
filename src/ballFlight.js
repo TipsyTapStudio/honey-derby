@@ -47,7 +47,7 @@ export class BallFlight {
     switch (hitResult.judgment) {
       case 'HOME_RUN':
         this.duration = BALL_FLIGHT_HR_DURATION;
-        this.endX = CANVAS_WIDTH / 2 + dir * 1.5;
+        this.endX = CANVAS_WIDTH / 2 + dir * 4;   // 大きなL/Rスプレッド (旧 dir*1.5)
         this.endY = -50;          // off-screen top (into the stands)
         this.peakY = 100;         // high arc
         this.endRadius = 2;       // tiny (far away)
@@ -55,7 +55,7 @@ export class BallFlight {
 
       case 'HIT':
         this.duration = BALL_FLIGHT_HIT_DURATION;
-        this.endX = CANVAS_WIDTH / 2 + dir * 2;
+        this.endX = CANVAS_WIDTH / 2 + dir * 3.5;  // 大きなL/Rスプレッド (旧 dir*2)
         this.endY = 200;          // lands in outfield (before stands)
         this.peakY = 150;         // moderate arc
         this.endRadius = 4;
@@ -63,11 +63,11 @@ export class BallFlight {
 
       case 'FOUL':
         this.duration = BALL_FLIGHT_FOUL_DURATION;
-        // Fly off left or right based on direction sign
-        this.endX = dir < 0 ? -50 : CANVAS_WIDTH + 50;
-        this.endY = 300;
-        this.peakY = 200;
-        this.endRadius = 5;
+        // Fly off left or right based on direction sign (more dramatic)
+        this.endX = dir < 0 ? -80 : CANVAS_WIDTH + 80;
+        this.endY = 250;          // やや高め (旧300)
+        this.peakY = 150;         // より劇的なアーク (旧200)
+        this.endRadius = 4;       // (旧5)
         break;
 
       default:

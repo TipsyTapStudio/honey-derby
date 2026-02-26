@@ -5,9 +5,13 @@ import {
 import { Pitcher } from './pitcher.js';
 import { Batter } from './batter.js';
 import { Ball } from './ball.js';
+import { BallFlight } from './ballFlight.js';
 import { ResultDisplay } from './resultDisplay.js';
 import * as HitDetector from './hitDetector.js';
 import * as Renderer from './renderer.js';
+
+// Null input for batter update during RESULT state (no movement, no swing)
+const NULL_INPUT = { left: false, right: false, up: false, down: false, space: false };
 
 export class Game {
   constructor(canvas, assets) {
@@ -18,6 +22,7 @@ export class Game {
     this.pitcher = new Pitcher();
     this.batter = new Batter();
     this.ball = null;
+    this.ballFlight = null;
     this.resultDisplay = new ResultDisplay();
     this.lastTimestamp = 0;
 
@@ -54,6 +59,7 @@ export class Game {
       case 'READY':
         // Wait for space to start (rising edge)
         if (spacePressed) {
+          // TODO: audioManager.play('se_game_start')
           this.transitionTo('COUNTDOWN');
         }
         break;
@@ -62,6 +68,7 @@ export class Game {
         this.pitcher.updateCountdown(dt);
         this.batter.update(dt, this.inputState);
         if (this.pitcher.isCountdownComplete()) {
+          // TODO: audioManager.play('se_pitch')
           this.transitionTo('PITCHING');
         }
         break;
@@ -83,6 +90,7 @@ export class Game {
         // Ball passed batter zone (miss)
         if (this.ball && this.ball.active && this.ball.isPastBatter()) {
           this.ball.active = false;
+          // TODO: audioManager.play('se_strike')
           this.handleHitResult({
             hit: false,
             timing: 'none',
@@ -96,11 +104,19 @@ export class Game {
 
       case 'RESULT':
         this.resultDisplay.update(dt);
+        // Update batter during RESULT so recovery animation completes
+        this.batter.update(dt, NULL_INPUT);
+        // Update ball flight animation
+        if (this.ballFlight && this.ballFlight.active) {
+          this.ballFlight.update(dt);
+        }
         if (this.resultDisplay.isComplete()) {
+          this.ballFlight = null;
           if (this.remainingPitches > 0) {
             this.transitionTo('COUNTDOWN');
           } else {
             this.cleared = this.homeRuns >= HR_QUOTA;
+            // TODO: audioManager.play(this.cleared ? 'se_stage_clear' : 'se_game_over')
             this.transitionTo('GAME_OVER');
           }
         }
@@ -134,6 +150,17 @@ export class Game {
 
     console.log(`[PITCH ${this.pitchCount}] ${result.judgment} | timing: ${result.timing} | xGap: ${result.xGap}px | angle: ${result.direction}° | distance: ${result.distance}m`);
 
+    // Launch ball flight animation for contact hits (HR, HIT, FOUL)
+    if (result.hit && result.judgment !== 'STRIKE') {
+      this.ballFlight = new BallFlight();
+      this.ballFlight.launch(result, this.ball.x, this.ball.y);
+      // TODO: audioManager.play('se_hit_xxx') based on judgment
+      // TODO: audioManager.play('se_crowd_xxx') based on judgment
+    } else {
+      this.ballFlight = null;
+      // TODO: audioManager.play('se_swing_miss') if swung, or 'se_strike' if not
+    }
+
     this.resultDisplay.show(result);
     this.state = 'RESULT';
   }
@@ -143,6 +170,7 @@ export class Game {
       case 'COUNTDOWN':
         this.pitcher.reset();
         this.ball = null;
+        this.ballFlight = null;
         break;
       case 'PITCHING':
         this.ball = new Ball();
@@ -164,10 +192,11 @@ export class Game {
     this.cleared = false;
     this.batter.reset();
     this.ball = null;
+    this.ballFlight = null;
   }
 
   render() {
-    // Layer 1: Background image (replaces clearCanvas + drawField)
+    // Layer 1: Background image
     Renderer.drawBackground(this.ctx, this.assets.bg);
 
     // Layer 2: Moai (pitching machine)
@@ -176,9 +205,14 @@ export class Game {
     // Layer 3: Batter sprite
     Renderer.drawBatterSprite(this.ctx, this.batter, this.assets.batter);
 
-    // Layer 4: Ball (on top)
+    // Layer 4: Ball (pitched, in flight toward batter)
     if (this.ball && this.ball.active) {
       Renderer.drawBall(this.ctx, this.ball);
+    }
+
+    // Layer 5: Ball flight (post-hit trajectory)
+    if (this.ballFlight && this.ballFlight.active) {
+      Renderer.drawBallFlight(this.ctx, this.ballFlight);
     }
 
     // Scoreboard (always visible)

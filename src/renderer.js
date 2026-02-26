@@ -55,6 +55,35 @@ export function drawBall(ctx, ball) {
 }
 
 // =============================================
+// Ball Flight (Post-Hit Trajectory)
+// =============================================
+
+export function drawBallFlight(ctx, ballFlight) {
+  if (!ballFlight || !ballFlight.active) return;
+
+  const r = Math.max(1, ballFlight.radius);
+
+  // Shadow (shrinks as ball flies away)
+  ctx.fillStyle = 'rgba(0,0,0,0.15)';
+  ctx.beginPath();
+  ctx.ellipse(
+    ballFlight.x + 1, ballFlight.y + 2,
+    r * 0.7, r * 0.3,
+    0, 0, Math.PI * 2
+  );
+  ctx.fill();
+
+  // Ball
+  ctx.fillStyle = COLOR_BALL;
+  ctx.strokeStyle = COLOR_BALL_OUTLINE;
+  ctx.lineWidth = Math.max(0.5, r / 7);
+  ctx.beginPath();
+  ctx.arc(ballFlight.x, ballFlight.y, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+}
+
+// =============================================
 // UI Overlays
 // =============================================
 

@@ -2,7 +2,8 @@ import {
   BATTER_X, BATTER_Y, BATTER_MOVE_SPEED,
   BATTER_MIN_X, BATTER_MAX_X, BATTER_MIN_Y, BATTER_MAX_Y,
   BAT_IDLE_ANGLE, BAT_IMPACT_END_ANGLE, BAT_FOLLOW_END_ANGLE,
-  SWING_IMPACT_MS, SWING_FOLLOWTHROUGH_MS, SWING_RECOVERY_MS
+  SWING_IMPACT_MS, SWING_FOLLOWTHROUGH_MS, SWING_RECOVERY_MS,
+  BAT_TIP_OFFSET
 } from './constants.js';
 
 export class Batter {
@@ -83,7 +84,7 @@ export class Batter {
    * swing_01 (idx 0)  → Idle
    * swing_02~05 (1~4) → Impact (4 frames across 120ms)
    * swing_06~08 (5~7) → Follow-through (3 frames across 100ms)
-   * swing_09~11 (8~10) → Recovery (3 frames across 280ms)
+   * Recovery: reverse playback 7→6→5→4→3→2→1→0 (8 frames across 280ms)
    */
   _updateFrameIndex() {
     if (this.swingState === 'idle') {
@@ -96,7 +97,7 @@ export class Batter {
       this.frameIndex = 5 + Math.floor(p * 3);  // 5,6,7
     } else if (this.swingState === 'recovery') {
       const p = Math.min(this.swingTimer / SWING_RECOVERY_MS, 0.999);
-      this.frameIndex = 8 + Math.floor(p * 3);  // 8,9,10
+      this.frameIndex = 7 - Math.floor(p * 8);  // 7,6,5,4,3,2,1,0 (逆再生)
     }
   }
 
@@ -106,8 +107,7 @@ export class Batter {
 
   getBatCenterX() {
     // The bat's sweet spot is at the tip, offset from batter center
-    const batTipOffset = 40; // px from center
-    return this.x + Math.cos(this.batAngle) * batTipOffset;
+    return this.x + Math.cos(this.batAngle) * BAT_TIP_OFFSET;
   }
 
   reset() {

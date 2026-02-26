@@ -24,10 +24,13 @@ export const BATTER_MIN_Y = 580;
 export const BATTER_MAX_Y = 635;
 
 // --- Batter Sprite ---
-export const BATTER_SPRITE_W = 180;   // リサイズ後の幅
-export const BATTER_SPRITE_H = 119;   // リサイズ後の高さ
-export const BATTER_ANCHOR_X = 81;    // スプライト内キャラ中心X (※Preview で微調整)
-export const BATTER_ANCHOR_Y = 100;   // スプライト内キャラ足元Y (※Preview で微調整)
+export const BATTER_SPRITE_W = 360;   // リサイズ後の幅 (旧180, 2倍拡大)
+export const BATTER_SPRITE_H = 238;   // リサイズ後の高さ (旧119, 2倍拡大)
+export const BATTER_ANCHOR_X = 162;   // スプライト内キャラ中心X (旧81, 2倍)
+export const BATTER_ANCHOR_Y = 200;   // スプライト内キャラ足元Y (旧100, 2倍)
+
+// --- Bat Offset (Hit Detection) ---
+export const BAT_TIP_OFFSET = 80;     // バット先端オフセット(px) (旧ハードコード40, 2倍)
 
 // --- Ball ---
 export const BALL_SPEED = 340;        // px/sec (旧450, 飛距離短縮に合わせて調整)
@@ -55,6 +58,11 @@ export const MAX_DISTANCE = 160;      // 最大飛距離(m)
 export const HR_DISTANCE_THRESHOLD = 100; // HR基準(m)
 export const HIT_DISTANCE_THRESHOLD = 30; // HIT基準(m)
 export const FOUL_ANGLE_THRESHOLD = 35;   // ファール角度基準(°)
+
+// --- Ball Flight (Post-Hit Trajectory) ---
+export const BALL_FLIGHT_HR_DURATION = 1200;   // ms
+export const BALL_FLIGHT_HIT_DURATION = 1000;  // ms
+export const BALL_FLIGHT_FOUL_DURATION = 800;  // ms
 
 // --- Result Display ---
 export const RESULT_DISPLAY_MS = 2000;

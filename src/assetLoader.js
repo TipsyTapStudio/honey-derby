@@ -1,7 +1,6 @@
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from './constants.js';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, BATTER_SPRITE_W, BATTER_SPRITE_H } from './constants.js';
 
 const BATTER_FRAME_COUNT = 11;
-const BATTER_SPRITE_SCALE = 180 / 2000; // 2000px → 180px
 
 /**
  * Preload all game images and resize via offscreen Canvas.
@@ -33,11 +32,9 @@ export class AssetLoader {
     // Resize BG to canvas size (848x1264 → 480x720)
     const bg = this._resizeToCanvas(bgImg, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    // Resize batter frames (2000x1320 → 180x119)
+    // Resize batter frames (2000x1320 → BATTER_SPRITE_W x BATTER_SPRITE_H)
     const batter = batterImgs.map(img => {
-      const w = Math.round(img.naturalWidth * BATTER_SPRITE_SCALE);
-      const h = Math.round(img.naturalHeight * BATTER_SPRITE_SCALE);
-      return this._resizeToCanvas(img, w, h);
+      return this._resizeToCanvas(img, BATTER_SPRITE_W, BATTER_SPRITE_H);
     });
 
     // Moai is small (87x164) — use as-is, no resize

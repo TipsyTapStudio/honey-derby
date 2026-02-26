@@ -2,7 +2,7 @@ import {
   BAT_HITZONE_HEIGHT, BAT_HITZONE_WIDTH,
   SWEET_SPOT_RADIUS, MAX_DISTANCE,
   HR_DISTANCE_THRESHOLD, HIT_DISTANCE_THRESHOLD, FOUL_ANGLE_THRESHOLD,
-  BAT_IMPACT_END_ANGLE
+  BAT_IMPACT_END_ANGLE, HIT_ZONE_CENTER_Y
 } from './constants.js';
 
 /**
@@ -11,8 +11,8 @@ import {
  * Returns HitResult or null (no contact).
  */
 export function evaluate(ball, batter) {
-  const batZoneTop = batter.y - BAT_HITZONE_HEIGHT / 2;
-  const batZoneBottom = batter.y + BAT_HITZONE_HEIGHT / 2;
+  const batZoneTop = HIT_ZONE_CENTER_Y - BAT_HITZONE_HEIGHT / 2;
+  const batZoneBottom = HIT_ZONE_CENTER_Y + BAT_HITZONE_HEIGHT / 2;
 
   // Step 1: Ball in Y zone?
   if (ball.y < batZoneTop || ball.y > batZoneBottom) {

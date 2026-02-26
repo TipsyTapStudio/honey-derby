@@ -1,5 +1,5 @@
 import {
-  BALL_SPEED, BALL_START_RADIUS, BALL_END_RADIUS, BATTER_Y, BAT_HITZONE_HEIGHT
+  BALL_SPEED, BALL_START_RADIUS, BALL_END_RADIUS, HIT_ZONE_CENTER_Y, BAT_HITZONE_HEIGHT
 } from './constants.js';
 
 export class Ball {
@@ -46,6 +46,6 @@ export class Ball {
   }
 
   isPastBatter() {
-    return this.y > BATTER_Y + BAT_HITZONE_HEIGHT / 2;
+    return this.y > HIT_ZONE_CENTER_Y + BAT_HITZONE_HEIGHT / 2;
   }
 }

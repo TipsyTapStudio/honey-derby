@@ -117,7 +117,8 @@ export class Game {
             this.ball.active = false;
           }
         }
-        if (this.resultDisplay.isComplete()) {
+        const flightDone = !this.ballFlight || !this.ballFlight.active;
+        if (this.resultDisplay.isComplete() && flightDone) {
           this.ballFlight = null;
           if (this.remainingPitches > 0) {
             this.transitionTo('COUNTDOWN');

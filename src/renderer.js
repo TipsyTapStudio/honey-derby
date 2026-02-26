@@ -205,7 +205,7 @@ export function drawResult(ctx, resultDisplay) {
       color = '#ffffff';
       break;
     case 'FOUL':
-      text = 'ファール';
+      text = 'ファウル';
       color = '#FFAA00';
       break;
     case 'STRIKE':

@@ -5,7 +5,9 @@ import {
   DIRECTION_MAX_ANGLE,
   DIRECTION_AMPLIFICATION_POWER, DIRECTION_NORMALIZATION_RANGE,
   JUST_TIMING_THRESHOLD_PX,
-  DIRECTION_TIMING_OFFSET_PX
+  DIRECTION_TIMING_OFFSET_PX,
+  COURSE_DIRECTION_FACTOR,
+  STRIKE_ZONE_CENTER_X
 } from './constants.js';
 
 /**
@@ -71,7 +73,12 @@ export function evaluate(ball, batter) {
   const absOffset = Math.abs(adjustedOffset);
   const normalized = Math.min(absOffset / DIRECTION_NORMALIZATION_RANGE, 1.0);
   const amplified = Math.pow(normalized, DIRECTION_AMPLIFICATION_POWER) * DIRECTION_MAX_ANGLE;
-  const directionAngle = Math.max(-45, Math.min(45, sign * amplified));
+  const timingDirection = sign * amplified;
+
+  // Course direction bias: inside → pull left, outside → push right
+  // Based on ball X distance from strike zone center (240)
+  const courseBias = (ball.x - STRIKE_ZONE_CENTER_X) * COURSE_DIRECTION_FACTOR;
+  const directionAngle = Math.max(-45, Math.min(45, timingDirection + courseBias));
 
   // Timing labels:
   //   ball above center (negative offset) = early swing
@@ -108,6 +115,7 @@ export function evaluate(ball, batter) {
     _debug: {
       sweetSpotDist: Math.round(sweetSpotDist),
       isRootSide,
+      courseBias: Math.round(courseBias),
       ballOffsetY: Math.round(ballOffsetY),
       adjustedOffset: Math.round(adjustedOffset),
       batAngleDeg: Math.round(batter.batAngle * (180 / Math.PI) * 10) / 10,

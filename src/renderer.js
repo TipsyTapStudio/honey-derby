@@ -309,7 +309,7 @@ export function drawResult(ctx, resultDisplay) {
       color = '#FFD700';
       break;
     case 'HIT':
-      text = 'ヒット！';
+      text = 'OUT!';
       color = '#ffffff';
       break;
     case 'FOUL':

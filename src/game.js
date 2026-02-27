@@ -36,6 +36,7 @@ export class Game {
 
     // Score
     this.homeRuns = 0;
+    this.totalHRDistance = 0;
     this.pitchCount = 0;
     this.remainingPitches = TOTAL_PITCHES;
     this.cleared = false;
@@ -196,6 +197,7 @@ export class Game {
 
     if (result.judgment === 'HOME_RUN') {
       this.homeRuns++;
+      this.totalHRDistance += result.distance;
     }
 
     // FOUL does not count as a pitch (does not reduce remaining)
@@ -268,6 +270,7 @@ export class Game {
 
   resetGame() {
     this.homeRuns = 0;
+    this.totalHRDistance = 0;
     this.pitchCount = 0;
     this.remainingPitches = TOTAL_PITCHES;
     this.cleared = false;
@@ -312,19 +315,19 @@ export class Game {
     // Layer 5: Batter sprite (手前)
     Renderer.drawBatterSprite(this.ctx, this.batter, this.assets.batter);
 
-    // Scoreboard (always visible)
-    Renderer.drawScoreboard(this.ctx, {
-      homeRuns: this.homeRuns,
-      remainingPitches: this.remainingPitches
-    });
-
-    // Heartbeat icon (pulsing heart below scoreboard)
-    Renderer.drawHeartbeat(this.ctx, this.heartbeat);
+    // Scoreboard & power bar (hidden on title screen)
+    if (this.state !== 'READY') {
+      Renderer.drawScoreboard(this.ctx, {
+        homeRuns: this.homeRuns,
+        remainingPitches: this.remainingPitches
+      });
+      Renderer.drawHeartbeat(this.ctx, this.heartbeat);
+    }
 
     // State-specific overlays
     switch (this.state) {
       case 'READY':
-        Renderer.drawReady(this.ctx);
+        Renderer.drawReady(this.ctx, this.assets.title);
         break;
       case 'COUNTDOWN':
         Renderer.drawCountdown(this.ctx, this.pitcher.countdownValue);
@@ -333,7 +336,7 @@ export class Game {
         Renderer.drawResult(this.ctx, this.resultDisplay);
         break;
       case 'GAME_OVER':
-        Renderer.drawGameOver(this.ctx, this.cleared);
+        Renderer.drawGameOver(this.ctx, this.cleared, this.totalHRDistance, this.homeRuns);
         break;
     }
 

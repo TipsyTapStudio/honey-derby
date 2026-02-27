@@ -11,7 +11,7 @@ export class AssetLoader {
    * @returns {Promise<{bg: HTMLCanvasElement, moai: HTMLImageElement, batter: HTMLCanvasElement[]}>}
    */
   async load(onProgress) {
-    const total = 1 + 1 + BATTER_FRAME_COUNT; // bg + moai + 11 batter
+    const total = 1 + 1 + 1 + BATTER_FRAME_COUNT; // bg + moai + title + 11 batter
     let loaded = 0;
 
     const report = () => {
@@ -20,9 +20,10 @@ export class AssetLoader {
     };
 
     // Load all images in parallel
-    const [bgImg, moaiImg, ...batterImgs] = await Promise.all([
+    const [bgImg, moaiImg, titleImg, ...batterImgs] = await Promise.all([
       this._loadImage('assets/bg/bg_day_nomoai.PNG').then(img => { report(); return img; }),
       this._loadImage('assets/bg/moai_day.png').then(img => { report(); return img; }),
+      this._loadImage('assets/title/title.png').then(img => { report(); return img; }),
       ...Array.from({ length: BATTER_FRAME_COUNT }, (_, i) => {
         const num = String(i + 1).padStart(2, '0');
         return this._loadImage(`assets/batter/swing_${num}.png`).then(img => { report(); return img; });
@@ -38,7 +39,8 @@ export class AssetLoader {
     });
 
     // Moai is small (87x164) — use as-is, no resize
-    return { bg, moai: moaiImg, batter };
+    // Title image — use as-is (drawn with scaling in renderer)
+    return { bg, moai: moaiImg, batter, title: titleImg };
   }
 
   _loadImage(src) {

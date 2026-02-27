@@ -18,12 +18,12 @@ function drawLoading(loaded, total) {
   ctx.textBaseline = 'middle';
 
   // Title
-  ctx.font = 'bold 36px sans-serif';
+  ctx.font = 'bold 36px "Bebas Neue", sans-serif';
   ctx.fillStyle = '#FFD700';
   ctx.fillText('HONEY DERBY', CANVAS_WIDTH / 2, 300);
 
   // Loading text
-  ctx.font = '20px sans-serif';
+  ctx.font = '20px "Bebas Neue", sans-serif';
   ctx.fillStyle = '#ffffff';
   ctx.fillText('Loading...', CANVAS_WIDTH / 2, 360);
 
@@ -42,7 +42,7 @@ function drawLoading(loaded, total) {
   ctx.fillRect(barX + 2, barY + 2, (barW - 4) * progress, barH - 4);
 
   // Counter
-  ctx.font = '14px sans-serif';
+  ctx.font = '14px "Bebas Neue", sans-serif';
   ctx.fillStyle = '#aaaaaa';
   ctx.fillText(`${loaded} / ${total}`, CANVAS_WIDTH / 2, barY + barH + 25);
 
@@ -72,12 +72,12 @@ loader.load((loaded, total) => {
   console.error('Asset loading failed:', err);
   ctx.fillStyle = '#1a1a2e';
   ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-  ctx.font = '20px sans-serif';
+  ctx.font = '20px "Bebas Neue", sans-serif';
   ctx.fillStyle = '#ff4444';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText('Loading failed!', CANVAS_WIDTH / 2, 360);
-  ctx.font = '14px sans-serif';
+  ctx.font = '14px "Bebas Neue", sans-serif';
   ctx.fillStyle = '#aaaaaa';
   ctx.fillText(err.message, CANVAS_WIDTH / 2, 400);
 });

@@ -18,11 +18,15 @@ import * as Renderer from './renderer.js';
 // Null input for batter update during RESULT state (no movement, no swing)
 const NULL_INPUT = { left: false, right: false, up: false, down: false, space: false };
 
+// Exponential smoothing factor for touch drag (lower = heavier feel)
+const TOUCH_SMOOTHING = 8;
+
 export class Game {
   constructor(canvas, assets) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
     this.assets = assets; // { bg, moai, batter[] }
+    this.isTouchDevice = 'ontouchstart' in window;
     this.state = 'READY'; // READY | COUNTDOWN | PITCHING | RESULT | GAME_OVER
     this.pitcher = new Pitcher();
     this.batter = new Batter();
@@ -32,7 +36,7 @@ export class Game {
     this.heartbeat = new HeartBeat();
     this.lastTimestamp = 0;
 
-    this.inputState = { left: false, right: false, up: false, down: false, space: false };
+    this.inputState = { left: false, right: false, up: false, down: false, space: false, titleReturn: false };
     this.prevSpaceForState = false; // Edge detection for state transitions
 
     // Score
@@ -47,6 +51,8 @@ export class Game {
       dragging: false,
       dragOffsetX: 0,
       dragOffsetY: 0,
+      targetX: BATTER_X,
+      targetY: BATTER_Y,
     };
 
     // Debug mode
@@ -193,7 +199,18 @@ export class Game {
           this.resetGame();
           this.transitionTo('COUNTDOWN');
         }
+        if (this.inputState.titleReturn) {
+          this.inputState.titleReturn = false;
+          this.returnToTitle();
+        }
         break;
+    }
+
+    // Touch drag smoothing (frame-rate independent)
+    if (this.touchState.dragging) {
+      const t = 1 - Math.exp(-TOUCH_SMOOTHING * dt);
+      this.batter.x += (this.touchState.targetX - this.batter.x) * t;
+      this.batter.y += (this.touchState.targetY - this.batter.y) * t;
     }
 
     this.prevSpaceForState = this.inputState.space;
@@ -288,6 +305,11 @@ export class Game {
     this.ballFlight = null;
   }
 
+  returnToTitle() {
+    this.resetGame();
+    this.state = 'READY';
+  }
+
   /**
    * Get the pitch target coordinates.
    * Randomly selects from 3 courses: inside, middle, outside.
@@ -335,7 +357,7 @@ export class Game {
     // State-specific overlays
     switch (this.state) {
       case 'READY':
-        Renderer.drawReady(this.ctx, this.assets.title);
+        Renderer.drawReady(this.ctx, this.assets.title, this.isTouchDevice);
         break;
       case 'COUNTDOWN':
         Renderer.drawCountdown(this.ctx, this.pitcher.countdownValue);
@@ -362,6 +384,9 @@ export class Game {
     if (e.code === 'Space') {
       e.preventDefault();
       this.inputState.space = true;
+    }
+    if (e.code === 'Escape' && this.state === 'GAME_OVER') {
+      this.inputState.titleReturn = true;
     }
     if (e.code === 'KeyD') {
       this.debugMode = !this.debugMode;
@@ -392,9 +417,22 @@ export class Game {
     for (const touch of e.changedTouches) {
       const { x: cx, y: cy } = this._touchToCanvas(touch, canvasRect);
 
-      // READY / GAME_OVER → any tap = start / retry
-      if (this.state === 'READY' || this.state === 'GAME_OVER') {
+      // READY → any tap = start
+      if (this.state === 'READY') {
         this.inputState.space = true;
+        return;
+      }
+
+      // GAME_OVER → check button bounds
+      if (this.state === 'GAME_OVER') {
+        const RETRY_BTN = { x: 140, y: 415, w: 200, h: 48 };
+        const TITLE_BTN = { x: 140, y: 478, w: 200, h: 48 };
+        const inBtn = (btn) => cx >= btn.x && cx <= btn.x + btn.w && cy >= btn.y && cy <= btn.y + btn.h;
+        if (inBtn(RETRY_BTN)) {
+          this.inputState.space = true;
+        } else if (inBtn(TITLE_BTN)) {
+          this.inputState.titleReturn = true;
+        }
         return;
       }
 
@@ -403,6 +441,8 @@ export class Game {
         this.touchState.dragging = true;
         this.touchState.dragOffsetX = this.batter.x - cx;
         this.touchState.dragOffsetY = this.batter.y - cy;
+        this.touchState.targetX = this.batter.x;
+        this.touchState.targetY = this.batter.y;
         return;
       }
 
@@ -418,8 +458,8 @@ export class Game {
     if (!this.touchState.dragging) return;
     const touch = e.changedTouches[0];
     const { x: cx, y: cy } = this._touchToCanvas(touch, canvasRect);
-    this.batter.x = Math.max(BATTER_MIN_X, Math.min(BATTER_MAX_X, cx + this.touchState.dragOffsetX));
-    this.batter.y = Math.max(BATTER_MIN_Y, Math.min(BATTER_MAX_Y, cy + this.touchState.dragOffsetY));
+    this.touchState.targetX = Math.max(BATTER_MIN_X, Math.min(BATTER_MAX_X, cx + this.touchState.dragOffsetX));
+    this.touchState.targetY = Math.max(BATTER_MIN_Y, Math.min(BATTER_MAX_Y, cy + this.touchState.dragOffsetY));
   }
 
   handleTouchEnd(e) {

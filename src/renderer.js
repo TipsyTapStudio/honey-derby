@@ -348,15 +348,47 @@ export function drawGameOver(ctx, cleared, score, hrCount) {
   const hrText = hrCount === 1 ? '1 Home Run' : `${hrCount} Home Runs`;
   ctx.fillText(hrText, cx, 385);
 
-  // Retry instruction
+  // --- Buttons ---
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+  ctx.letterSpacing = '2px';
+  const btnRadius = 8;
+
+  const RETRY_BTN = { x: 140, y: 415, w: 200, h: 48 };
+  const TITLE_BTN = { x: 140, y: 478, w: 200, h: 48 };
+
+  // Retry button
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+  ctx.beginPath();
+  ctx.roundRect(RETRY_BTN.x, RETRY_BTN.y, RETRY_BTN.w, RETRY_BTN.h, btnRadius);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(RETRY_BTN.x, RETRY_BTN.y, RETRY_BTN.w, RETRY_BTN.h, btnRadius);
+  ctx.stroke();
   ctx.font = 'bold 22px Arial, Helvetica, sans-serif';
   ctx.fillStyle = '#ffffff';
-  ctx.fillText('Tap to Retry', cx, 440);
+  ctx.fillText('RETRY', cx, RETRY_BTN.y + RETRY_BTN.h / 2);
+
+  // Title button
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+  ctx.beginPath();
+  ctx.roundRect(TITLE_BTN.x, TITLE_BTN.y, TITLE_BTN.w, TITLE_BTN.h, btnRadius);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(TITLE_BTN.x, TITLE_BTN.y, TITLE_BTN.w, TITLE_BTN.h, btnRadius);
+  ctx.stroke();
+  ctx.font = 'bold 22px Arial, Helvetica, sans-serif';
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+  ctx.fillText('TITLE', cx, TITLE_BTN.y + TITLE_BTN.h / 2);
 
   ctx.restore();
 }
 
-export function drawReady(ctx, titleImg) {
+export function drawReady(ctx, titleImg, isTouchDevice) {
   ctx.save();
 
   // Title image — centered at top, aspect-ratio preserved
@@ -377,14 +409,14 @@ export function drawReady(ctx, titleImg) {
   ctx.letterSpacing = '3px';
   ctx.font = 'bold 24px Arial, Helvetica, sans-serif';
   ctx.fillStyle = '#ffffff';
-  ctx.fillText('TAP TO START', CANVAS_WIDTH / 2, 350);
+  ctx.fillText(isTouchDevice ? 'TAP TO START' : 'PRESS SPACE TO START', CANVAS_WIDTH / 2, 350);
 
   // Footer credits
   ctx.shadowBlur = 0;
   ctx.letterSpacing = '1px';
   ctx.font = '14px Arial, Helvetica, sans-serif';
   ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
-  ctx.fillText('\u00A9 2025 Tipsy Tap Studio', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 30);
+  ctx.fillText('\u00A9 2026 Tipsy Tap Studio', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 30);
 
   ctx.restore();
 }

@@ -1,6 +1,5 @@
 import {
-  HEARTBEAT_BPM, HEARTBEAT_SHARPNESS, HEARTBEAT_MIN_POWER,
-  HEARTBEAT_ICON_MIN_SIZE, HEARTBEAT_ICON_MAX_SIZE
+  HEARTBEAT_BPM, HEARTBEAT_SHARPNESS, HEARTBEAT_MIN_POWER
 } from './constants.js';
 
 /**
@@ -45,15 +44,6 @@ export class HeartBeat {
   getMultiplier() {
     const power = this.getPower();
     return HEARTBEAT_MIN_POWER + power * (1 - HEARTBEAT_MIN_POWER);
-  }
-
-  /**
-   * ハートアイコンのサイズ (描画用)
-   * パワーに応じて MIN_SIZE 〜 MAX_SIZE
-   */
-  getIconSize() {
-    const power = this.getPower();
-    return HEARTBEAT_ICON_MIN_SIZE + power * (HEARTBEAT_ICON_MAX_SIZE - HEARTBEAT_ICON_MIN_SIZE);
   }
 
   reset() {

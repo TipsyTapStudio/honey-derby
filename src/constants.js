@@ -124,12 +124,14 @@ export const HEARTBEAT_BPM = 72;             // 心拍数 (安静時)
 export const HEARTBEAT_SHARPNESS = 1;        // ピーク鋭さ (1=正弦波, 2+=鋭い)
 export const HEARTBEAT_MIN_POWER = 0.3;      // 谷のパワー倍率 (ピーク=1.0)
 
-// --- Heartbeat Visual ---
-export const HEARTBEAT_ICON_X = 90;          // ハートアイコンX (スコアボード中央)
-export const HEARTBEAT_ICON_Y = 155;         // ハートアイコンY (スコアボード下)
-export const HEARTBEAT_ICON_MIN_SIZE = 12;   // 最小ハートサイズ(px)
-export const HEARTBEAT_ICON_MAX_SIZE = 28;   // 最大ハートサイズ(px)
-export const HEARTBEAT_COLOR = '#E74C3C';    // ハートの色(赤)
+// --- Power Bar Visual ---
+// 左バッターボックスの左端縦線に沿って表示
+export const POWER_BAR_X = 62;              // バッターボックス左端X
+export const POWER_BAR_TOP = 500;           // バー上端Y
+export const POWER_BAR_BOTTOM = 620;        // バー下端Y
+export const POWER_BAR_WIDTH = 6;           // バー幅(px)
+export const POWER_BAR_COLOR_LOW = '#4488FF';   // パワー低: 青
+export const POWER_BAR_COLOR_HIGH = '#FF3333';  // パワー高: 赤
 
 // --- Scoreboard ---
 export const SCOREBOARD_X = 10;

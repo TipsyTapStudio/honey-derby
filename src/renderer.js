@@ -8,9 +8,8 @@ import {
   SCOREBOARD_BG, SCOREBOARD_BORDER,
   HR_QUOTA,
   BALL_SHADOW_OFFSET_MIN, BALL_SHADOW_OFFSET_MAX,
-  HEARTBEAT_ICON_X, HEARTBEAT_ICON_Y,
-  HEARTBEAT_ICON_MIN_SIZE, HEARTBEAT_ICON_MAX_SIZE,
-  HEARTBEAT_COLOR
+  POWER_BAR_X, POWER_BAR_TOP, POWER_BAR_BOTTOM,
+  POWER_BAR_WIDTH, POWER_BAR_COLOR_LOW, POWER_BAR_COLOR_HIGH
 } from './constants.js';
 
 // =============================================
@@ -22,9 +21,12 @@ export function drawBackground(ctx, bgCanvas) {
 }
 
 export function drawMoai(ctx, moaiImg) {
-  const dx = MOAI_X - moaiImg.width / 2;
-  const dy = MOAI_Y;
-  ctx.drawImage(moaiImg, dx, dy);
+  const scale = 0.7; // 元サイズの70%
+  const w = moaiImg.width * scale;
+  const h = moaiImg.height * scale;
+  const dx = MOAI_X - w / 2;
+  const dy = MOAI_Y + moaiImg.height * (1 - scale); // 下端を揃える(球の出る口の位置を維持)
+  ctx.drawImage(moaiImg, dx, dy, w, h);
 }
 
 export function drawBatterSprite(ctx, batter, batterFrames) {
@@ -164,40 +166,33 @@ export function drawScoreboard(ctx, gameState) {
   const textX = x + 10;
   const numX = x + w - 30;
 
-  // Row 1: 目標
+  // Row 1: Target
   const row1Y = y + rowHeight / 2;
   ctx.font = 'bold 16px sans-serif';
   ctx.fillStyle = '#333';
   ctx.textAlign = 'left';
-  ctx.fillText('目標', textX, row1Y);
+  ctx.fillText('Target', textX, row1Y);
   ctx.font = 'bold 24px sans-serif';
   ctx.textAlign = 'right';
-  ctx.fillText(String(HR_QUOTA), numX, row1Y);
-  ctx.font = 'bold 14px sans-serif';
-  ctx.fillText('本', x + w - 8, row1Y);
+  ctx.fillText(String(HR_QUOTA), numX + 14, row1Y);
 
-  // Row 2: ホームラン
+  // Row 2: HR
   const row2Y = y + rowHeight + rowHeight / 2;
-  ctx.font = 'bold 14px sans-serif';
+  ctx.font = 'bold 16px sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillText('ホーム', textX, row2Y - 8);
-  ctx.fillText('ラン', textX, row2Y + 8);
+  ctx.fillText('HR', textX, row2Y);
   ctx.font = 'bold 24px sans-serif';
   ctx.textAlign = 'right';
-  ctx.fillText(String(gameState.homeRuns), numX, row2Y);
-  ctx.font = 'bold 14px sans-serif';
-  ctx.fillText('本', x + w - 8, row2Y);
+  ctx.fillText(String(gameState.homeRuns), numX + 14, row2Y);
 
-  // Row 3: 残り
+  // Row 3: Balls
   const row3Y = y + rowHeight * 2 + rowHeight / 2;
   ctx.font = 'bold 16px sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillText('残り', textX, row3Y);
+  ctx.fillText('Balls', textX, row3Y);
   ctx.font = 'bold 24px sans-serif';
   ctx.textAlign = 'right';
-  ctx.fillText(String(gameState.remainingPitches), numX, row3Y);
-  ctx.font = 'bold 14px sans-serif';
-  ctx.fillText('球', x + w - 8, row3Y);
+  ctx.fillText(String(gameState.remainingPitches), numX + 14, row3Y);
 
   ctx.restore();
 }
@@ -206,65 +201,44 @@ export function drawScoreboard(ctx, gameState) {
 // Heartbeat (pulsing heart icon)
 // =============================================
 
-/**
- * ハートをベジェ曲線で描画
- * @param {CanvasRenderingContext2D} ctx
- * @param {number} cx  中心X
- * @param {number} cy  中心Y
- * @param {number} size ハートの幅(≈高さ)
- */
-function drawHeartShape(ctx, cx, cy, size) {
-  const s = size / 2;
-  ctx.beginPath();
-  ctx.moveTo(cx, cy + s * 0.4); // 下部の尖端
-  // 左半分
-  ctx.bezierCurveTo(cx - s * 1.2, cy - s * 0.2, cx - s * 0.6, cy - s * 1.0, cx, cy - s * 0.4);
-  // 右半分
-  ctx.bezierCurveTo(cx + s * 0.6, cy - s * 1.0, cx + s * 1.2, cy - s * 0.2, cx, cy + s * 0.4);
-  ctx.closePath();
-}
-
 export function drawHeartbeat(ctx, heartbeat) {
   const power = heartbeat.getPower(); // 0.0 〜 1.0
-  const size = HEARTBEAT_ICON_MIN_SIZE + power * (HEARTBEAT_ICON_MAX_SIZE - HEARTBEAT_ICON_MIN_SIZE);
-  const cx = HEARTBEAT_ICON_X;
-  const cy = HEARTBEAT_ICON_Y;
+
+  const x = POWER_BAR_X;
+  const top = POWER_BAR_TOP;
+  const bottom = POWER_BAR_BOTTOM;
+  const barH = bottom - top;
+  const w = POWER_BAR_WIDTH;
+  const fillH = barH * power;
 
   ctx.save();
 
-  // Glow effect at high power
-  if (power > 0.6) {
-    const glowAlpha = (power - 0.6) * 1.5; // 0 ~ 0.6
-    ctx.shadowColor = HEARTBEAT_COLOR;
-    ctx.shadowBlur = 10 + power * 15;
-    ctx.globalAlpha = 0.3 + glowAlpha * 0.4;
-    drawHeartShape(ctx, cx, cy, size * 1.3);
-    ctx.fillStyle = HEARTBEAT_COLOR;
-    ctx.fill();
+  // Background track (dark, semi-transparent)
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+  ctx.fillRect(x - w / 2, top, w, barH);
+
+  // Filled portion (bottom-up, color lerp blue→red)
+  const r = Math.round(0x44 + (0xFF - 0x44) * power);
+  const g = Math.round(0x88 + (0x33 - 0x88) * power);
+  const b = Math.round(0xFF + (0x33 - 0xFF) * power);
+  ctx.fillStyle = `rgb(${r},${g},${b})`;
+  ctx.fillRect(x - w / 2, bottom - fillH, w, fillH);
+
+  // Glow at high power
+  if (power > 0.7) {
+    const glowAlpha = (power - 0.7) * 2.0; // 0 ~ 0.6
+    ctx.shadowColor = `rgb(${r},${g},${b})`;
+    ctx.shadowBlur = 8 + power * 8;
+    ctx.globalAlpha = 0.4 + glowAlpha * 0.4;
+    ctx.fillRect(x - w / 2, bottom - fillH, w, fillH);
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1.0;
   }
 
-  // Main heart
-  drawHeartShape(ctx, cx, cy, size);
-  ctx.fillStyle = HEARTBEAT_COLOR;
-  ctx.fill();
-
-  // Outline
-  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-  ctx.lineWidth = 1.5;
-  drawHeartShape(ctx, cx, cy, size);
-  ctx.stroke();
-
-  // Highlight (small white arc at top-left of heart)
-  if (size > 16) {
-    ctx.globalAlpha = 0.3 + power * 0.3;
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(cx - size * 0.15, cy - size * 0.15, size * 0.12, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalAlpha = 1.0;
-  }
+  // Thin border
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x - w / 2, top, w, barH);
 
   ctx.restore();
 }
@@ -283,7 +257,7 @@ export function drawResult(ctx, resultDisplay) {
   let text, color;
   switch (resultDisplay.judgment) {
     case 'HOME_RUN':
-      text = 'ホームラン！';
+      text = 'HOME RUN!';
       color = '#FFD700';
       break;
     case 'HIT':
@@ -291,11 +265,11 @@ export function drawResult(ctx, resultDisplay) {
       color = '#ffffff';
       break;
     case 'FOUL':
-      text = 'ファウル';
+      text = 'FOUL';
       color = '#FFAA00';
       break;
     case 'STRIKE':
-      text = 'ストライク';
+      text = 'STRIKE';
       color = '#FF4444';
       break;
     default:
@@ -352,7 +326,7 @@ export function drawGameOver(ctx, cleared) {
 
   ctx.font = 'bold 24px sans-serif';
   ctx.fillStyle = '#ffffff';
-  ctx.fillText('Space キーでリトライ', CANVAS_WIDTH / 2, 400);
+  ctx.fillText('Press Space to Retry', CANVAS_WIDTH / 2, 400);
 
   ctx.restore();
 }
@@ -372,9 +346,9 @@ export function drawReady(ctx) {
   ctx.font = 'bold 22px sans-serif';
   ctx.strokeStyle = '#000';
   ctx.lineWidth = 3;
-  ctx.strokeText('Space キーでスタート', CANVAS_WIDTH / 2, 380);
+  ctx.strokeText('Press Space to Start', CANVAS_WIDTH / 2, 380);
   ctx.fillStyle = '#ffffff';
-  ctx.fillText('Space キーでスタート', CANVAS_WIDTH / 2, 380);
+  ctx.fillText('Press Space to Start', CANVAS_WIDTH / 2, 380);
 
   ctx.restore();
 }

@@ -111,19 +111,16 @@ export function drawCountdown(ctx, countdownValue) {
   if (countdownValue <= 0) return;
 
   ctx.save();
-  ctx.font = 'bold 72px "Bebas Neue", sans-serif';
+  ctx.font = 'bold 72px Arial, Helvetica, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
+  ctx.letterSpacing = '4px';
 
-  // Position above moai's head
   const countdownY = MOAI_Y - 20;
 
-  // Outline
-  ctx.strokeStyle = '#000000';
-  ctx.lineWidth = 6;
-  ctx.strokeText(String(countdownValue), CANVAS_WIDTH / 2, countdownY);
-
-  // Fill
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+  ctx.shadowBlur = 10;
+  ctx.shadowOffsetY = 3;
   ctx.fillStyle = '#ffffff';
   ctx.fillText(String(countdownValue), CANVAS_WIDTH / 2, countdownY);
   ctx.restore();
@@ -165,31 +162,33 @@ export function drawScoreboard(ctx, gameState) {
   const textX = x + 10;
   const numX = x + w - 30;
 
+  ctx.letterSpacing = '1px';
+
   // Row 1: Target
   const row1Y = y + rowHeight / 2;
-  ctx.font = 'bold 16px "Bebas Neue", sans-serif';
+  ctx.font = 'bold 16px Arial, Helvetica, sans-serif';
   ctx.fillStyle = '#333';
   ctx.textAlign = 'left';
   ctx.fillText('Target', textX, row1Y);
-  ctx.font = 'bold 24px "Bebas Neue", sans-serif';
+  ctx.font = 'bold 24px Arial, Helvetica, sans-serif';
   ctx.textAlign = 'right';
   ctx.fillText(String(HR_QUOTA), numX + 14, row1Y);
 
   // Row 2: HR
   const row2Y = y + rowHeight + rowHeight / 2;
-  ctx.font = 'bold 16px "Bebas Neue", sans-serif';
+  ctx.font = 'bold 16px Arial, Helvetica, sans-serif';
   ctx.textAlign = 'left';
   ctx.fillText('HR', textX, row2Y);
-  ctx.font = 'bold 24px "Bebas Neue", sans-serif';
+  ctx.font = 'bold 24px Arial, Helvetica, sans-serif';
   ctx.textAlign = 'right';
   ctx.fillText(String(gameState.homeRuns), numX + 14, row2Y);
 
   // Row 3: Balls
   const row3Y = y + rowHeight * 2 + rowHeight / 2;
-  ctx.font = 'bold 16px "Bebas Neue", sans-serif';
+  ctx.font = 'bold 16px Arial, Helvetica, sans-serif';
   ctx.textAlign = 'left';
   ctx.fillText('Balls', textX, row3Y);
-  ctx.font = 'bold 24px "Bebas Neue", sans-serif';
+  ctx.font = 'bold 24px Arial, Helvetica, sans-serif';
   ctx.textAlign = 'right';
   ctx.fillText(String(gameState.remainingPitches), numX + 14, row3Y);
 
@@ -288,20 +287,19 @@ export function drawResult(ctx, resultDisplay) {
   }
 
   // Judgment text
-  ctx.font = 'bold 56px "Bebas Neue", sans-serif';
-  ctx.strokeStyle = '#000';
-  ctx.lineWidth = 6;
-  ctx.strokeText(text, CANVAS_WIDTH / 2, 320);
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+  ctx.shadowBlur = 10;
+  ctx.shadowOffsetY = 3;
+  ctx.letterSpacing = '3px';
+  ctx.font = 'bold 56px Arial, Helvetica, sans-serif';
   ctx.fillStyle = color;
   ctx.fillText(text, CANVAS_WIDTH / 2, 320);
 
   // Distance (only for HR)
   if (resultDisplay.distance > 0 && resultDisplay.judgment === 'HOME_RUN') {
-    ctx.font = 'bold 40px "Bebas Neue", sans-serif';
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 4;
+    ctx.font = 'bold 40px Arial, Helvetica, sans-serif';
+    ctx.letterSpacing = '2px';
     const distText = `${resultDisplay.distance}m`;
-    ctx.strokeText(distText, CANVAS_WIDTH / 2, 380);
     ctx.fillStyle = '#ffffff';
     ctx.fillText(distText, CANVAS_WIDTH / 2, 380);
   }
@@ -320,41 +318,40 @@ export function drawGameOver(ctx, cleared, score, hrCount) {
 
   const cx = CANVAS_WIDTH / 2;
 
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+  ctx.shadowBlur = 12;
+  ctx.shadowOffsetY = 3;
+  ctx.letterSpacing = '4px';
+
   if (cleared) {
-    ctx.font = '64px "Bebas Neue", sans-serif';
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 6;
-    ctx.strokeText('STAGE CLEAR!', cx, 280);
+    ctx.font = 'bold 56px Arial, Helvetica, sans-serif';
     ctx.fillStyle = '#FFD700';
     ctx.fillText('STAGE CLEAR!', cx, 280);
   } else {
-    ctx.font = '64px "Bebas Neue", sans-serif';
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 6;
-    ctx.strokeText('GAME OVER', cx, 280);
+    ctx.font = 'bold 56px Arial, Helvetica, sans-serif';
     ctx.fillStyle = '#FF4444';
     ctx.fillText('GAME OVER', cx, 280);
   }
 
   // Score display
-  ctx.font = '40px "Bebas Neue", sans-serif';
-  ctx.strokeStyle = '#000';
-  ctx.lineWidth = 4;
+  ctx.letterSpacing = '2px';
+  ctx.font = 'bold 36px Arial, Helvetica, sans-serif';
   const scoreText = `Score: ${score}m`;
-  ctx.strokeText(scoreText, cx, 345);
   ctx.fillStyle = '#ffffff';
   ctx.fillText(scoreText, cx, 345);
 
   // HR count
-  ctx.font = '22px "Bebas Neue", sans-serif';
+  ctx.shadowBlur = 6;
+  ctx.letterSpacing = '1px';
+  ctx.font = '22px Arial, Helvetica, sans-serif';
   ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
   const hrText = hrCount === 1 ? '1 Home Run' : `${hrCount} Home Runs`;
   ctx.fillText(hrText, cx, 385);
 
   // Retry instruction
-  ctx.font = '24px "Bebas Neue", sans-serif';
+  ctx.font = 'bold 22px Arial, Helvetica, sans-serif';
   ctx.fillStyle = '#ffffff';
-  ctx.fillText('Press Space to Retry', cx, 440);
+  ctx.fillText('Tap to Retry', cx, 440);
 
   ctx.restore();
 }
@@ -371,18 +368,21 @@ export function drawReady(ctx, titleImg) {
     ctx.drawImage(titleImg, (CANVAS_WIDTH - w) / 2, 80, w, h);
   }
 
-  // "Tap to Start" (touch) / "Press Space to Start" (keyboard)
+  // "Tap to Start"
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = '26px "Bebas Neue", sans-serif';
-  ctx.strokeStyle = '#000';
-  ctx.lineWidth = 3;
-  ctx.strokeText('Tap to Start', CANVAS_WIDTH / 2, 350);
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+  ctx.shadowBlur = 8;
+  ctx.shadowOffsetY = 2;
+  ctx.letterSpacing = '3px';
+  ctx.font = 'bold 24px Arial, Helvetica, sans-serif';
   ctx.fillStyle = '#ffffff';
-  ctx.fillText('Tap to Start', CANVAS_WIDTH / 2, 350);
+  ctx.fillText('TAP TO START', CANVAS_WIDTH / 2, 350);
 
   // Footer credits
-  ctx.font = '16px "Bebas Neue", sans-serif';
+  ctx.shadowBlur = 0;
+  ctx.letterSpacing = '1px';
+  ctx.font = '14px Arial, Helvetica, sans-serif';
   ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
   ctx.fillText('\u00A9 2025 Tipsy Tap Studio', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 30);
 

@@ -333,8 +333,8 @@ export function drawResult(ctx, resultDisplay) {
   ctx.fillStyle = color;
   ctx.fillText(text, CANVAS_WIDTH / 2, 320);
 
-  // Distance (only for HR and HIT)
-  if (resultDisplay.distance > 0 && (resultDisplay.judgment === 'HOME_RUN' || resultDisplay.judgment === 'HIT')) {
+  // Distance (only for HR)
+  if (resultDisplay.distance > 0 && resultDisplay.judgment === 'HOME_RUN') {
     ctx.font = 'bold 40px sans-serif';
     ctx.strokeStyle = '#000';
     ctx.lineWidth = 4;

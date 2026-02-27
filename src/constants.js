@@ -41,7 +41,7 @@ export const BAT_TIP_OFFSET = 80;     // バット先端オフセット(px) (旧
 export const BAT_CONTACT_Y_OFFSET = 65; // バットの打点Y = batter.y - この値 (打点をさらに下げる)
 
 // --- Ball ---
-export const BALL_SPEED = 200;        // px/sec (カジュアルゲーム向けにさらに遅く)
+export const BALL_SPEED = 280;        // px/sec (遠近感カーブと合わせて体感速度アップ)
 export const BALL_START_RADIUS = 4;
 export const BALL_END_RADIUS = 14;
 
@@ -63,7 +63,7 @@ export const BAT_HITZONE_WIDTH = 90;  // バット判定幅(px) (カジュアル
 export const BAT_HITZONE_HEIGHT = 70; // バット判定高さ(px) (タイミング許容を大幅拡大)
 export const SWEET_SPOT_RADIUS = 20;  // 芯の半径(px) (HR出しやすく拡大)
 export const SWEET_SPOT_INSET = 20;   // 芯中心をバット先端から+20px右に (遠心力: TIP側にパワーゾーン)
-export const MAX_DISTANCE = 160;      // 最大飛距離(m)
+export const MAX_DISTANCE = 200;      // 最大飛距離(m) (パワー50%でもHR圏に届くよう拡大)
 export const HR_DISTANCE_THRESHOLD = 100; // HR基準(m)
 export const HIT_DISTANCE_THRESHOLD = 30; // HIT基準(m)
 export const FOUL_ANGLE_THRESHOLD = 35;   // ファウル判定角度(°) |direction|≧これならファウル

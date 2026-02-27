@@ -38,11 +38,18 @@ export class Ball {
     this.progress += distanceThisFrame / this.totalDistance;
     this.progress = Math.min(this.progress, 3.5); // allow ball to pass through to screen bottom
 
-    this.x = this.startX + (this.targetX - this.startX) * this.progress;
-    this.y = this.startY + (this.targetY - this.startY) * this.progress;
+    // Perspective ease-in: ball appears slow far away, accelerates as it approaches
+    // progress is linear (0→1), visualProgress applies power curve for depth illusion
+    const clamped = Math.min(this.progress, 1);
+    const visualProgress = Math.pow(clamped, 1.8);
+    // For progress > 1 (ball past batter), use linear extension
+    const effectiveProgress = this.progress <= 1 ? visualProgress : visualProgress + (this.progress - 1);
 
-    // Scale radius for depth illusion
-    this.radius = BALL_START_RADIUS + (BALL_END_RADIUS - BALL_START_RADIUS) * Math.min(this.progress, 1);
+    this.x = this.startX + (this.targetX - this.startX) * effectiveProgress;
+    this.y = this.startY + (this.targetY - this.startY) * effectiveProgress;
+
+    // Scale radius for depth illusion (also use visual progress for consistent perspective)
+    this.radius = BALL_START_RADIUS + (BALL_END_RADIUS - BALL_START_RADIUS) * visualProgress;
   }
 
   isPastBatter(batContactY) {

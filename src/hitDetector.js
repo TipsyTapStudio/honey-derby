@@ -7,6 +7,7 @@ import {
   JUST_TIMING_THRESHOLD_PX,
   DIRECTION_TIMING_OFFSET_PX,
   COURSE_DIRECTION_FACTOR,
+  TIP_DIRECTION_FACTOR,
   STRIKE_ZONE_CENTER_X
 } from './constants.js';
 
@@ -82,7 +83,12 @@ export function evaluate(ball, batter, powerMultiplier = 1.0) {
   // Course direction bias: inside → pull left, outside → push right
   // Based on ball X distance from strike zone center (240)
   const courseBias = (ball.x - STRIKE_ZONE_CENTER_X) * COURSE_DIRECTION_FACTOR;
-  const directionAngle = Math.max(-45, Math.min(45, timingDirection + courseBias));
+
+  // Bat contact direction bias: TIP → push right, ROOT → pull left
+  // 遠心力: バットの先(TIP)で捉えると流し打ち、根元(ROOT)だと引っ張り
+  const tipBias = signedGap * TIP_DIRECTION_FACTOR;
+
+  const directionAngle = Math.max(-45, Math.min(45, timingDirection + courseBias + tipBias));
 
   // Timing labels:
   //   ball above center (negative offset) = early swing
@@ -120,6 +126,7 @@ export function evaluate(ball, batter, powerMultiplier = 1.0) {
       sweetSpotDist: Math.round(sweetSpotDist),
       isRootSide,
       courseBias: Math.round(courseBias),
+      tipBias: Math.round(tipBias),
       ballOffsetY: Math.round(ballOffsetY),
       adjustedOffset: Math.round(adjustedOffset),
       batAngleDeg: Math.round(batter.batAngle * (180 / Math.PI) * 10) / 10,

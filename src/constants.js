@@ -69,11 +69,15 @@ export const HIT_DISTANCE_THRESHOLD = 30; // HIT基準(m)
 export const FOUL_ANGLE_THRESHOLD = 35;   // ファウル判定角度(°) |direction|≧これならファウル
 export const DIRECTION_MAX_ANGLE = 45;     // 方向角最大値(°) 増幅カーブの最大出力
 
-// --- Direction Mapping ---
-export const DIRECTION_AMPLIFICATION_POWER = 0.7; // 増幅カーブ指数 (0.7: sqrtより緩やかで左右fair幅を確保)
-export const DIRECTION_NORMALIZATION_RANGE = 40;   // 正規化範囲(deg)
-export const JUST_TIMING_THRESHOLD_DEG = 8;        // "just"判定幅(deg) (旧5→8に拡大)
-export const DIRECTION_TIMING_OFFSET_DEG = 8;      // タイミングオフセット(deg) 正=中央/左を遅め寄りに (左打ち打点下げ)
+// --- Direction Mapping (Ball Y-Offset Based) ---
+// Direction is determined by WHERE in the Y-zone the ball is hit:
+//   ball above center → early swing → pull left
+//   ball at center → just timing → center
+//   ball below center → late swing → push right
+export const DIRECTION_AMPLIFICATION_POWER = 0.7; // 増幅カーブ指数
+export const DIRECTION_NORMALIZATION_RANGE = 40;   // 正規化範囲(px) このY距離で最大方向角 (40: late方向のフェアゾーン確保)
+export const JUST_TIMING_THRESHOLD_PX = 10;        // "just"判定幅(px) 打点中心±この距離
+export const DIRECTION_TIMING_OFFSET_PX = 5;       // タイミングオフセット(px) 正=just中心を下に(遅め寄り)
 
 // --- Ball Flight (Post-Hit Trajectory) ---
 export const BALL_FLIGHT_HR_DURATION = 2500;   // ms (ゆっくり飛んでいく演出)

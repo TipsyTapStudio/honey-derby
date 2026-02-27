@@ -55,7 +55,7 @@ export class Game {
       lastSweetSpotDist: null,
       lastSweetSpotSide: null,
       lastTiming: null,
-      lastDeviationDeg: null,
+      lastBallOffsetY: null,
       lastDirectionAngle: null,
       lastJudgment: null,
       lastDistance: null,
@@ -209,13 +209,13 @@ export class Game {
     if (result._debug) {
       this.debugData.lastSweetSpotDist = result._debug.sweetSpotDist;
       this.debugData.lastSweetSpotSide = result._debug.isRootSide ? 'root' : 'tip';
-      this.debugData.lastDeviationDeg = result._debug.deviationDeg;
+      this.debugData.lastBallOffsetY = result._debug.ballOffsetY;
       this.debugData.lastBatAngle = result._debug.batAngleDeg;
     } else {
       // Clear per-hit debug data on miss/looking strike
       this.debugData.lastSweetSpotDist = null;
       this.debugData.lastSweetSpotSide = null;
-      this.debugData.lastDeviationDeg = null;
+      this.debugData.lastBallOffsetY = null;
     }
 
     // Launch ball flight animation for contact hits (HR, HIT, FOUL)

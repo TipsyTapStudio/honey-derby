@@ -2,10 +2,10 @@ import {
   BAT_HITZONE_HEIGHT, BAT_HITZONE_WIDTH,
   SWEET_SPOT_RADIUS, SWEET_SPOT_INSET, MAX_DISTANCE,
   HR_DISTANCE_THRESHOLD, HIT_DISTANCE_THRESHOLD, FOUL_ANGLE_THRESHOLD,
-  DIRECTION_MAX_ANGLE, BAT_IMPACT_END_ANGLE,
+  DIRECTION_MAX_ANGLE,
   DIRECTION_AMPLIFICATION_POWER, DIRECTION_NORMALIZATION_RANGE,
-  JUST_TIMING_THRESHOLD_DEG,
-  DIRECTION_TIMING_OFFSET_DEG
+  JUST_TIMING_THRESHOLD_PX,
+  DIRECTION_TIMING_OFFSET_PX
 } from './constants.js';
 
 /**
@@ -24,6 +24,7 @@ export function evaluate(ball, batter) {
   }
 
   // Step 2: X gap (signed for root/tip detection)
+  // getBatCenterX() returns fixed position (batter.x + BAT_TIP_OFFSET)
   const batCenterX = batter.getBatCenterX();
   const signedGap = ball.x - batCenterX;  // + = 先端の右側(tip), - = 根元側(root/詰まり)
   const xGap = Math.abs(signedGap);
@@ -33,9 +34,9 @@ export function evaluate(ball, batter) {
   }
 
   // Step 3: Distance from X gap (asymmetric sweet spot)
-  // xGap=0 is bat tip. Sweet spot center is SWEET_SPOT_INSET px from tip (toward root).
-  // Root side (rawDist > 0) has steep penalty (詰まり = jammed).
-  // Tip side (rawDist < 0) has gentle penalty.
+  // Sweet spot center is at bat tip (SWEET_SPOT_INSET px from tip toward root).
+  // Root side has steep penalty (詰まり = jammed).
+  // Tip side has gentle penalty.
   const rawDist = signedGap - SWEET_SPOT_INSET;
   const sweetSpotDist = Math.abs(rawDist);
   const isRootSide = rawDist < 0;  // 芯の左側(根元方向) = 詰まり
@@ -56,30 +57,30 @@ export function evaluate(ball, batter) {
   }
   distance = Math.max(0, Math.round(distance));
 
-  // Step 4: Direction angle from bat angle (sqrt amplification curve)
-  // batAngle at horizontal (impact end) = BAT_IMPACT_END_ANGLE (-360° = -2π)
-  // deviation > 0 → bat hasn't reached horizontal → player swung LATE → push right (+)
-  // deviation = 0 → bat exactly horizontal → just → center (0°)
-  // deviation < 0 → bat past horizontal → player swung EARLY → pull left (-)
-  const deviationRad = batter.batAngle - BAT_IMPACT_END_ANGLE;
-  // Timing offset: positive shifts "just" window later (allows later swing for center/left)
-  const deviationDeg = deviationRad * (180 / Math.PI) + DIRECTION_TIMING_OFFSET_DEG;
+  // Step 4: Direction angle from ball Y-offset (where in the zone the ball was hit)
+  // Ball Y-offset from bat contact center determines direction:
+  //   ballY < batContactY → ball above center → player swung EARLY → pull left (-)
+  //   ballY = batContactY → ball at center → JUST timing → center (0°)
+  //   ballY > batContactY → ball below center → player swung LATE → push right (+)
+  const ballOffsetY = ball.y - batContactY;
+  // Timing offset: positive shifts "just" center downward (later swing = just)
+  const adjustedOffset = ballOffsetY + DIRECTION_TIMING_OFFSET_PX;
 
-  // Sqrt amplification: small deviations produce meaningful direction spread
-  // Sign: player-perspective (early press → bat past horizontal → pull LEFT)
-  const sign = deviationDeg >= 0 ? 1 : -1;
-  const absDev = Math.abs(deviationDeg);
-  const normalized = Math.min(absDev / DIRECTION_NORMALIZATION_RANGE, 1.0);
+  // Amplification curve: small offsets produce meaningful direction spread
+  const sign = adjustedOffset >= 0 ? 1 : -1;
+  const absOffset = Math.abs(adjustedOffset);
+  const normalized = Math.min(absOffset / DIRECTION_NORMALIZATION_RANGE, 1.0);
   const amplified = Math.pow(normalized, DIRECTION_AMPLIFICATION_POWER) * DIRECTION_MAX_ANGLE;
   const directionAngle = Math.max(-45, Math.min(45, sign * amplified));
 
-  // Timing labels from the player's perspective:
-  // deviation > 0 (bat early in arc) = player pressed Space LATE
-  // deviation < 0 (bat past horizontal) = player pressed Space EARLY
+  // Timing labels:
+  //   ball above center (negative offset) = early swing
+  //   ball at center = just
+  //   ball below center (positive offset) = late swing
   let timing;
-  if (Math.abs(deviationDeg) <= JUST_TIMING_THRESHOLD_DEG) {
+  if (Math.abs(adjustedOffset) <= JUST_TIMING_THRESHOLD_PX) {
     timing = 'just';
-  } else if (deviationDeg > 0) {
+  } else if (adjustedOffset > 0) {
     timing = 'late';
   } else {
     timing = 'early';
@@ -107,7 +108,8 @@ export function evaluate(ball, batter) {
     _debug: {
       sweetSpotDist: Math.round(sweetSpotDist),
       isRootSide,
-      deviationDeg: Math.round(deviationDeg * 10) / 10,
+      ballOffsetY: Math.round(ballOffsetY),
+      adjustedOffset: Math.round(adjustedOffset),
       batAngleDeg: Math.round(batter.batAngle * (180 / Math.PI) * 10) / 10,
     }
   };

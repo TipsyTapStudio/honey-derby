@@ -116,8 +116,10 @@ export class Batter {
   }
 
   getBatCenterX() {
-    // The bat's sweet spot is at the tip, offset from batter center
-    return this.x + Math.cos(this.batAngle) * BAT_TIP_OFFSET;
+    // Fixed contact X: bat tip position at "just" timing (horizontal swing).
+    // Hit detection uses fixed X so contact depends on batter positioning, not bat angle.
+    // Bat angle only affects direction (early/just/late).
+    return this.x + BAT_TIP_OFFSET;
   }
 
   getBatContactY() {

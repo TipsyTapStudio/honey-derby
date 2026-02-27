@@ -361,8 +361,8 @@ export function drawDebugOverlay(ctx, d) {
   if (d.lastTiming !== null) {
     const side = d.lastSweetSpotSide || '-';
     const sweet = d.lastSweetSpotDist !== null ? `${d.lastSweetSpotDist}px(${side})` : '-';
-    const dev = d.lastDeviationDeg !== null ? `${d.lastDeviationDeg}deg` : '-';
-    const r2 = `Sweet:${sweet} | Timing:${d.lastTiming}(${dev}) | xGap:${d.lastXGap}px | Dir:${d.lastDirectionAngle}deg`;
+    const yOff = d.lastBallOffsetY !== null ? `${d.lastBallOffsetY}px` : '-';
+    const r2 = `Sweet:${sweet} | Timing:${d.lastTiming}(Y:${yOff}) | xGap:${d.lastXGap}px | Dir:${d.lastDirectionAngle}deg`;
     ctx.fillText(r2, x, panelY + 4 + lineH);
   }
 

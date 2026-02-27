@@ -289,17 +289,17 @@ export class Game {
     // Layer 2: Moai (pitching machine)
     Renderer.drawMoai(this.ctx, this.assets.moai);
 
-    // Layer 3: Ball flight (post-hit trajectory) — behind batter for depth
-    if (this.ballFlight && this.ballFlight.active) {
-      Renderer.drawBallFlight(this.ctx, this.ballFlight);
+    // Layer 3: Ball (pitched) — バッターの裏を通る(奥から来る球)
+    if (this.ball && this.ball.active) {
+      Renderer.drawBall(this.ctx, this.ball, this.state, this.batter.getBatContactY());
     }
 
     // Layer 4: Batter sprite
     Renderer.drawBatterSprite(this.ctx, this.batter, this.assets.batter);
 
-    // Layer 5: Ball (pitched, in flight toward batter)
-    if (this.ball && this.ball.active) {
-      Renderer.drawBall(this.ctx, this.ball, this.state, this.batter.getBatContactY());
+    // Layer 5: Ball flight (post-hit) — バッターの手前で放物線が見える
+    if (this.ballFlight && this.ballFlight.active) {
+      Renderer.drawBallFlight(this.ctx, this.ballFlight);
     }
 
     // Scoreboard (always visible)

@@ -2,7 +2,7 @@ import {
   BAT_HITZONE_HEIGHT, BAT_HITZONE_WIDTH,
   SWEET_SPOT_RADIUS, SWEET_SPOT_INSET, MAX_DISTANCE,
   HR_DISTANCE_THRESHOLD, HIT_DISTANCE_THRESHOLD, FOUL_ANGLE_THRESHOLD,
-  BAT_IMPACT_END_ANGLE,
+  DIRECTION_MAX_ANGLE, BAT_IMPACT_END_ANGLE,
   DIRECTION_AMPLIFICATION_POWER, DIRECTION_NORMALIZATION_RANGE,
   JUST_TIMING_THRESHOLD_DEG,
   DIRECTION_TIMING_OFFSET_DEG
@@ -23,9 +23,10 @@ export function evaluate(ball, batter) {
     return null;
   }
 
-  // Step 2: X gap
+  // Step 2: X gap (signed for root/tip detection)
   const batCenterX = batter.getBatCenterX();
-  const xGap = Math.abs(ball.x - batCenterX);
+  const signedGap = ball.x - batCenterX;  // + = 先端の右側(tip), - = 根元側(root/詰まり)
+  const xGap = Math.abs(signedGap);
 
   if (xGap > BAT_HITZONE_WIDTH / 2) {
     return null; // Whiff
@@ -35,9 +36,9 @@ export function evaluate(ball, batter) {
   // xGap=0 is bat tip. Sweet spot center is SWEET_SPOT_INSET px from tip (toward root).
   // Root side (rawDist > 0) has steep penalty (詰まり = jammed).
   // Tip side (rawDist < 0) has gentle penalty.
-  const rawDist = xGap - SWEET_SPOT_INSET;
+  const rawDist = signedGap - SWEET_SPOT_INSET;
   const sweetSpotDist = Math.abs(rawDist);
-  const isRootSide = rawDist > 0;
+  const isRootSide = rawDist < 0;  // 芯の左側(根元方向) = 詰まり
 
   let distance;
   if (sweetSpotDist <= SWEET_SPOT_RADIUS) {
@@ -48,7 +49,7 @@ export function evaluate(ball, batter) {
   } else {
     // Outside sweet spot — rapid falloff
     const edgeDist = sweetSpotDist - SWEET_SPOT_RADIUS;
-    const maxOuter = (BAT_HITZONE_WIDTH / 2) - SWEET_SPOT_INSET - SWEET_SPOT_RADIUS;
+    const maxOuter = (BAT_HITZONE_WIDTH / 2) - SWEET_SPOT_RADIUS;
     const falloff = Math.min(edgeDist / Math.max(1, maxOuter), 1);
     const edgeValue = MAX_DISTANCE * (1 - (isRootSide ? 0.6 : 0.2));
     distance = edgeValue * (1 - falloff);
@@ -69,7 +70,7 @@ export function evaluate(ball, batter) {
   const sign = deviationDeg >= 0 ? 1 : -1;
   const absDev = Math.abs(deviationDeg);
   const normalized = Math.min(absDev / DIRECTION_NORMALIZATION_RANGE, 1.0);
-  const amplified = Math.pow(normalized, DIRECTION_AMPLIFICATION_POWER) * FOUL_ANGLE_THRESHOLD;
+  const amplified = Math.pow(normalized, DIRECTION_AMPLIFICATION_POWER) * DIRECTION_MAX_ANGLE;
   const directionAngle = Math.max(-45, Math.min(45, sign * amplified));
 
   // Timing labels from the player's perspective:

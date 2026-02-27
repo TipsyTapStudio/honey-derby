@@ -106,12 +106,12 @@ export class Batter {
   }
 
   /**
-   * Extended hit window: impact phase + first 50ms of followthrough.
-   * Allows push-direction hits (bat past horizontal).
+   * Extended hit window: impact phase + first 80ms of followthrough.
+   * Allows pull-direction hits (bat past horizontal, early swing).
    */
   isInHitWindow() {
     if (this.swingState === 'impact') return true;
-    if (this.swingState === 'followthrough' && this.swingTimer < 50) return true;
+    if (this.swingState === 'followthrough' && this.swingTimer < 80) return true;
     return false;
   }
 

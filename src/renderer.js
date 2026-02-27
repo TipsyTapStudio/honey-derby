@@ -362,24 +362,24 @@ export function drawGameOver(ctx, cleared, score, hrCount) {
 export function drawReady(ctx, titleImg) {
   ctx.save();
 
-  // Title image — centered, aspect-ratio preserved
+  // Title image — centered at top, aspect-ratio preserved
   if (titleImg) {
     const maxW = 380;
     const scale = maxW / titleImg.width;
     const w = maxW;
     const h = titleImg.height * scale;
-    ctx.drawImage(titleImg, (CANVAS_WIDTH - w) / 2, 230, w, h);
+    ctx.drawImage(titleImg, (CANVAS_WIDTH - w) / 2, 80, w, h);
   }
 
-  // "Press Space to Start"
+  // "Tap to Start" (touch) / "Press Space to Start" (keyboard)
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.font = '26px "Bebas Neue", sans-serif';
   ctx.strokeStyle = '#000';
   ctx.lineWidth = 3;
-  ctx.strokeText('Press Space to Start', CANVAS_WIDTH / 2, 420);
+  ctx.strokeText('Tap to Start', CANVAS_WIDTH / 2, 350);
   ctx.fillStyle = '#ffffff';
-  ctx.fillText('Press Space to Start', CANVAS_WIDTH / 2, 420);
+  ctx.fillText('Tap to Start', CANVAS_WIDTH / 2, 350);
 
   // Footer credits
   ctx.font = '16px "Bebas Neue", sans-serif';

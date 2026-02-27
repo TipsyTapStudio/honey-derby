@@ -2,8 +2,9 @@ import {
   PITCHER_X, PITCHER_Y,
   STRIKE_ZONE_CENTER_Y,
   COURSE_INSIDE_X, COURSE_MIDDLE_X, COURSE_OUTSIDE_X,
-  TOTAL_PITCHES, HR_QUOTA, CANVAS_HEIGHT,
-  BALL_SPEED, BATTER_X, BATTER_Y
+  TOTAL_PITCHES, HR_QUOTA, CANVAS_WIDTH, CANVAS_HEIGHT,
+  BALL_SPEED, BATTER_X, BATTER_Y,
+  BATTER_MIN_X, BATTER_MAX_X, BATTER_MIN_Y, BATTER_MAX_Y
 } from './constants.js';
 import { Pitcher } from './pitcher.js';
 import { Batter } from './batter.js';
@@ -40,6 +41,13 @@ export class Game {
     this.pitchCount = 0;
     this.remainingPitches = TOTAL_PITCHES;
     this.cleared = false;
+
+    // Touch state
+    this.touchState = {
+      dragging: false,
+      dragOffsetX: 0,
+      dragOffsetY: 0,
+    };
 
     // Debug mode
     this.debugMode = false;
@@ -366,5 +374,57 @@ export class Game {
     if (e.code === 'ArrowUp') this.inputState.up = false;
     if (e.code === 'ArrowDown') this.inputState.down = false;
     if (e.code === 'Space') this.inputState.space = false;
+  }
+
+  // =============================================
+  // Touch Input (Mobile)
+  // =============================================
+
+  _touchToCanvas(touch, canvasRect) {
+    return {
+      x: (touch.clientX - canvasRect.left) * (CANVAS_WIDTH / canvasRect.width),
+      y: (touch.clientY - canvasRect.top) * (CANVAS_HEIGHT / canvasRect.height),
+    };
+  }
+
+  handleTouchStart(e, canvasRect) {
+    e.preventDefault();
+    for (const touch of e.changedTouches) {
+      const { x: cx, y: cy } = this._touchToCanvas(touch, canvasRect);
+
+      // READY / GAME_OVER → any tap = start / retry
+      if (this.state === 'READY' || this.state === 'GAME_OVER') {
+        this.inputState.space = true;
+        return;
+      }
+
+      // Left 55% of screen → drag batter
+      if (cx < CANVAS_WIDTH * 0.55) {
+        this.touchState.dragging = true;
+        this.touchState.dragOffsetX = this.batter.x - cx;
+        this.touchState.dragOffsetY = this.batter.y - cy;
+        return;
+      }
+
+      // Right 45%, lower 50% → swing
+      if (cx >= CANVAS_WIDTH * 0.55 && cy >= CANVAS_HEIGHT * 0.5) {
+        this.inputState.space = true;
+      }
+    }
+  }
+
+  handleTouchMove(e, canvasRect) {
+    e.preventDefault();
+    if (!this.touchState.dragging) return;
+    const touch = e.changedTouches[0];
+    const { x: cx, y: cy } = this._touchToCanvas(touch, canvasRect);
+    this.batter.x = Math.max(BATTER_MIN_X, Math.min(BATTER_MAX_X, cx + this.touchState.dragOffsetX));
+    this.batter.y = Math.max(BATTER_MIN_Y, Math.min(BATTER_MAX_Y, cy + this.touchState.dragOffsetY));
+  }
+
+  handleTouchEnd(e) {
+    e.preventDefault();
+    this.touchState.dragging = false;
+    this.inputState.space = false;
   }
 }

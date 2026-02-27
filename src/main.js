@@ -60,6 +60,13 @@ loader.load((loaded, total) => {
   const game = new Game(canvas, assets);
   window.addEventListener('keydown', (e) => game.handleKeyDown(e));
   window.addEventListener('keyup', (e) => game.handleKeyUp(e));
+
+  // Touch input (mobile)
+  const getRect = () => canvas.getBoundingClientRect();
+  canvas.addEventListener('touchstart', (e) => game.handleTouchStart(e, getRect()), { passive: false });
+  canvas.addEventListener('touchmove', (e) => game.handleTouchMove(e, getRect()), { passive: false });
+  canvas.addEventListener('touchend', (e) => game.handleTouchEnd(e), { passive: false });
+
   window._game = game; // expose for debugging
 
   // Enable debug mode via URL parameter: ?debug=1

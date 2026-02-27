@@ -8,8 +8,7 @@ import {
   SCOREBOARD_BG, SCOREBOARD_BORDER,
   HR_QUOTA,
   BALL_SHADOW_OFFSET_MIN, BALL_SHADOW_OFFSET_MAX,
-  POWER_BAR_X, POWER_BAR_TOP, POWER_BAR_BOTTOM,
-  POWER_BAR_WIDTH, POWER_BAR_COLOR_LOW, POWER_BAR_COLOR_HIGH
+  POWER_BAR_X, POWER_BAR_TOP, POWER_BAR_BOTTOM, POWER_BAR_WIDTH
 } from './constants.js';
 
 // =============================================
@@ -208,35 +207,46 @@ export function drawHeartbeat(ctx, heartbeat) {
   const top = POWER_BAR_TOP;
   const bottom = POWER_BAR_BOTTOM;
   const barH = bottom - top;
-  const w = POWER_BAR_WIDTH;
+  const w = POWER_BAR_WIDTH;  // 定数で2倍に(12px)
   const fillH = barH * power;
+  const STRIPE_H = 4;         // ストライプの黒帯間隔(px)
+  const GAP_H = 2;            // ストライプ間のギャップ(px)
+  const STEP = STRIPE_H + GAP_H;
 
   ctx.save();
 
-  // Background track (dark, semi-transparent)
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+  // Background track (dark)
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
   ctx.fillRect(x - w / 2, top, w, barH);
 
-  // Filled portion (bottom-up, color lerp blue→red)
-  const r = Math.round(0x44 + (0xFF - 0x44) * power);
-  const g = Math.round(0x88 + (0x33 - 0x88) * power);
-  const b = Math.round(0xFF + (0x33 - 0xFF) * power);
-  ctx.fillStyle = `rgb(${r},${g},${b})`;
-  ctx.fillRect(x - w / 2, bottom - fillH, w, fillH);
+  // Equalizer stripes — ショッキングピンク + 黒ストライプ
+  const fillTop = bottom - fillH;
+  const pink = '#FF1493'; // ショッキングピンク
 
-  // Glow at high power
+  // Glow at high power (drawn first, behind stripes)
   if (power > 0.7) {
-    const glowAlpha = (power - 0.7) * 2.0; // 0 ~ 0.6
-    ctx.shadowColor = `rgb(${r},${g},${b})`;
-    ctx.shadowBlur = 8 + power * 8;
-    ctx.globalAlpha = 0.4 + glowAlpha * 0.4;
-    ctx.fillRect(x - w / 2, bottom - fillH, w, fillH);
+    const glowAlpha = (power - 0.7) * 2.5;
+    ctx.shadowColor = pink;
+    ctx.shadowBlur = 10 + power * 12;
+    ctx.globalAlpha = 0.3 + glowAlpha * 0.5;
+    ctx.fillStyle = pink;
+    ctx.fillRect(x - w / 2, fillTop, w, fillH);
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1.0;
   }
 
+  // Draw filled stripes bottom-up (pink bars with black gaps = equalizer look)
+  ctx.fillStyle = pink;
+  for (let sy = bottom - STRIPE_H; sy >= fillTop; sy -= STEP) {
+    const stripeTop = Math.max(sy, fillTop);
+    const stripeBottom = sy + STRIPE_H;
+    if (stripeBottom > fillTop) {
+      ctx.fillRect(x - w / 2, stripeTop, w, stripeBottom - stripeTop);
+    }
+  }
+
   // Thin border
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
   ctx.lineWidth = 1;
   ctx.strokeRect(x - w / 2, top, w, barH);
 

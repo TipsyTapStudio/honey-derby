@@ -129,9 +129,7 @@ export const HEARTBEAT_MIN_POWER = 0.3;      // 谷のパワー倍率 (ピーク
 export const POWER_BAR_X = 62;              // バッターボックス左端X
 export const POWER_BAR_TOP = 500;           // バー上端Y
 export const POWER_BAR_BOTTOM = 620;        // バー下端Y
-export const POWER_BAR_WIDTH = 6;           // バー幅(px)
-export const POWER_BAR_COLOR_LOW = '#4488FF';   // パワー低: 青
-export const POWER_BAR_COLOR_HIGH = '#FF3333';  // パワー高: 赤
+export const POWER_BAR_WIDTH = 12;          // バー幅(px)
 
 // --- Scoreboard ---
 export const SCOREBOARD_X = 10;

@@ -1,6 +1,9 @@
 import {
-  PITCHER_X, PITCHER_Y, HOME_PLATE_Y,
-  TOTAL_PITCHES, HR_QUOTA, CANVAS_HEIGHT
+  PITCHER_X, PITCHER_Y,
+  STRIKE_ZONE_CENTER_Y,
+  COURSE_INSIDE_X, COURSE_MIDDLE_X, COURSE_OUTSIDE_X,
+  TOTAL_PITCHES, HR_QUOTA, CANVAS_HEIGHT,
+  BALL_SPEED, BATTER_X, BATTER_Y
 } from './constants.js';
 import { Pitcher } from './pitcher.js';
 import { Batter } from './batter.js';
@@ -34,6 +37,30 @@ export class Game {
     this.pitchCount = 0;
     this.remainingPitches = TOTAL_PITCHES;
     this.cleared = false;
+
+    // Debug mode
+    this.debugMode = false;
+    this.debugData = {
+      pitchNumber: 0,
+      pitchType: 'Straight',
+      pitchCourse: '真ん中',
+      pitchSpeed: BALL_SPEED,
+      batterX: BATTER_X,
+      batterY: BATTER_Y,
+      swingState: 'idle',
+      ballY: null,
+      batContactY: null,
+      lastBatAngle: null,
+      // Per-hit data
+      lastSweetSpotDist: null,
+      lastSweetSpotSide: null,
+      lastTiming: null,
+      lastDeviationDeg: null,
+      lastDirectionAngle: null,
+      lastJudgment: null,
+      lastDistance: null,
+      lastXGap: null,
+    };
   }
 
   start() {
@@ -53,6 +80,16 @@ export class Game {
   }
 
   update(dt) {
+    // Update live debug data
+    if (this.debugMode) {
+      this.debugData.batterX = Math.round(this.batter.x);
+      this.debugData.batterY = Math.round(this.batter.y);
+      this.debugData.swingState = this.batter.swingState;
+      this.debugData.batContactY = Math.round(this.batter.getBatContactY());
+      this.debugData.ballY = this.ball && this.ball.active ? Math.round(this.ball.y) : null;
+      this.debugData.lastBatAngle = Math.round(this.batter.batAngle * (180 / Math.PI) * 10) / 10;
+    }
+
     const spacePressed = this.inputState.space && !this.prevSpaceForState;
 
     switch (this.state) {
@@ -162,6 +199,25 @@ export class Game {
 
     console.log(`[PITCH ${this.pitchCount}] ${result.judgment} | timing: ${result.timing} | xGap: ${result.xGap}px | angle: ${result.direction}° | distance: ${result.distance}m`);
 
+    // Store debug data
+    this.debugData.pitchNumber = this.pitchCount;
+    this.debugData.lastTiming = result.timing;
+    this.debugData.lastDirectionAngle = result.direction;
+    this.debugData.lastJudgment = result.judgment;
+    this.debugData.lastDistance = result.distance;
+    this.debugData.lastXGap = result.xGap;
+    if (result._debug) {
+      this.debugData.lastSweetSpotDist = result._debug.sweetSpotDist;
+      this.debugData.lastSweetSpotSide = result._debug.isRootSide ? 'root' : 'tip';
+      this.debugData.lastDeviationDeg = result._debug.deviationDeg;
+      this.debugData.lastBatAngle = result._debug.batAngleDeg;
+    } else {
+      // Clear per-hit debug data on miss/looking strike
+      this.debugData.lastSweetSpotDist = null;
+      this.debugData.lastSweetSpotSide = null;
+      this.debugData.lastDeviationDeg = null;
+    }
+
     // Launch ball flight animation for contact hits (HR, HIT, FOUL)
     if (result.hit && result.judgment !== 'STRIKE') {
       this.ballFlight = new BallFlight();
@@ -186,10 +242,12 @@ export class Game {
         // Sync batter's prevSpace to prevent auto-swing on first frame
         this.batter.prevSpace = this.inputState.space;
         break;
-      case 'PITCHING':
+      case 'PITCHING': {
         this.ball = new Ball();
-        this.ball.launch(PITCHER_X, PITCHER_Y, PITCHER_X, HOME_PLATE_Y);
+        const pitch = this.getPitchTarget();
+        this.ball.launch(PITCHER_X, PITCHER_Y, pitch.x, pitch.y);
         break;
+      }
       case 'RESULT':
         // handled by handleHitResult
         break;
@@ -207,6 +265,21 @@ export class Game {
     this.batter.reset();
     this.ball = null;
     this.ballFlight = null;
+  }
+
+  /**
+   * Get the pitch target coordinates.
+   * Randomly selects from 3 courses: inside, middle, outside.
+   */
+  getPitchTarget() {
+    const courses = [
+      { name: '内角', x: COURSE_INSIDE_X },
+      { name: '真ん中', x: COURSE_MIDDLE_X },
+      { name: '外角', x: COURSE_OUTSIDE_X },
+    ];
+    const course = courses[Math.floor(Math.random() * courses.length)];
+    this.debugData.pitchCourse = course.name;
+    return { x: course.x, y: STRIKE_ZONE_CENTER_Y };
   }
 
   render() {
@@ -250,6 +323,11 @@ export class Game {
         Renderer.drawGameOver(this.ctx, this.cleared);
         break;
     }
+
+    // Debug overlay (toggled with D key)
+    if (this.debugMode) {
+      Renderer.drawDebugOverlay(this.ctx, this.debugData);
+    }
   }
 
   handleKeyDown(e) {
@@ -260,6 +338,9 @@ export class Game {
     if (e.code === 'Space') {
       e.preventDefault();
       this.inputState.space = true;
+    }
+    if (e.code === 'KeyD') {
+      this.debugMode = !this.debugMode;
     }
   }
 

@@ -61,6 +61,12 @@ loader.load((loaded, total) => {
   window.addEventListener('keydown', (e) => game.handleKeyDown(e));
   window.addEventListener('keyup', (e) => game.handleKeyUp(e));
   window._game = game; // expose for debugging
+
+  // Enable debug mode via URL parameter: ?debug=1
+  if (new URLSearchParams(window.location.search).get('debug') === '1') {
+    game.debugMode = true;
+  }
+
   game.start();
 }).catch((err) => {
   console.error('Asset loading failed:', err);

@@ -71,14 +71,14 @@ export class BallFlight {
           this.endY = 70 - (t - 0.75) * 480; // 70→-50 (moonshot off screen)
         }
 
-        this.endX = CANVAS_WIDTH / 2 + dir * 8;
+        this.endX = CANVAS_WIDTH / 2 + dir * 10;
         this.endRadius = 3 - t * 2.5;     // 3→0.5 (gets very small)
         break;
       }
 
       case 'HIT': {
         this.groundY = 380;  // Outfield ground Y
-        const spread = dir * 3.5;
+        const spread = dir * 5.0;
         const fieldEndX = CANVAS_WIDTH / 2 + spread;
 
         this.phases = [

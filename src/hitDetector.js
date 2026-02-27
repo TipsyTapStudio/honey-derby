@@ -2,7 +2,10 @@ import {
   BAT_HITZONE_HEIGHT, BAT_HITZONE_WIDTH,
   SWEET_SPOT_RADIUS, SWEET_SPOT_INSET, MAX_DISTANCE,
   HR_DISTANCE_THRESHOLD, HIT_DISTANCE_THRESHOLD, FOUL_ANGLE_THRESHOLD,
-  BAT_IMPACT_END_ANGLE
+  BAT_IMPACT_END_ANGLE,
+  DIRECTION_AMPLIFICATION_POWER, DIRECTION_NORMALIZATION_RANGE,
+  JUST_TIMING_THRESHOLD_DEG,
+  DIRECTION_TIMING_OFFSET_DEG
 } from './constants.js';
 
 /**
@@ -52,22 +55,33 @@ export function evaluate(ball, batter) {
   }
   distance = Math.max(0, Math.round(distance));
 
-  // Step 4: Direction angle from bat angle (physical consistency)
+  // Step 4: Direction angle from bat angle (sqrt amplification curve)
   // batAngle at horizontal (impact end) = BAT_IMPACT_END_ANGLE (-360° = -2π)
-  // deviation > 0 → bat hasn't reached horizontal → pull (left, negative angle)
-  // deviation = 0 → bat exactly horizontal → center (0°)
-  // deviation < 0 → bat past horizontal → push (right, positive angle)
+  // deviation > 0 → bat hasn't reached horizontal → player swung LATE → push right (+)
+  // deviation = 0 → bat exactly horizontal → just → center (0°)
+  // deviation < 0 → bat past horizontal → player swung EARLY → pull left (-)
   const deviationRad = batter.batAngle - BAT_IMPACT_END_ANGLE;
-  const deviationDeg = deviationRad * (180 / Math.PI);
-  const directionAngle = Math.max(-45, Math.min(45, -deviationDeg * 0.6));
+  // Timing offset: positive shifts "just" window later (allows later swing for center/left)
+  const deviationDeg = deviationRad * (180 / Math.PI) + DIRECTION_TIMING_OFFSET_DEG;
 
+  // Sqrt amplification: small deviations produce meaningful direction spread
+  // Sign: player-perspective (early press → bat past horizontal → pull LEFT)
+  const sign = deviationDeg >= 0 ? 1 : -1;
+  const absDev = Math.abs(deviationDeg);
+  const normalized = Math.min(absDev / DIRECTION_NORMALIZATION_RANGE, 1.0);
+  const amplified = Math.pow(normalized, DIRECTION_AMPLIFICATION_POWER) * FOUL_ANGLE_THRESHOLD;
+  const directionAngle = Math.max(-45, Math.min(45, sign * amplified));
+
+  // Timing labels from the player's perspective:
+  // deviation > 0 (bat early in arc) = player pressed Space LATE
+  // deviation < 0 (bat past horizontal) = player pressed Space EARLY
   let timing;
-  if (Math.abs(deviationDeg) <= 5) {
+  if (Math.abs(deviationDeg) <= JUST_TIMING_THRESHOLD_DEG) {
     timing = 'just';
   } else if (deviationDeg > 0) {
-    timing = 'early';
-  } else {
     timing = 'late';
+  } else {
+    timing = 'early';
   }
 
   // Step 5: Classify result (foul check first — extreme angle always = foul)
@@ -88,6 +102,12 @@ export function evaluate(ball, batter) {
     xGap: Math.round(xGap),
     direction: Math.round(directionAngle),
     distance,
-    judgment
+    judgment,
+    _debug: {
+      sweetSpotDist: Math.round(sweetSpotDist),
+      isRootSide,
+      deviationDeg: Math.round(deviationDeg * 10) / 10,
+      batAngleDeg: Math.round(batter.batAngle * (180 / Math.PI) * 10) / 10,
+    }
   };
 }

@@ -7,7 +7,7 @@ import {
   SCOREBOARD_X, SCOREBOARD_Y, SCOREBOARD_WIDTH, SCOREBOARD_HEIGHT,
   SCOREBOARD_BG, SCOREBOARD_BORDER,
   HR_QUOTA,
-  GROUND_SHADOW_Y,
+  BALL_SHADOW_OFFSET_MIN, BALL_SHADOW_OFFSET_MAX,
   TIMING_HINT_ENABLED, TIMING_HINT_Y_RANGE
 } from './constants.js';
 
@@ -40,18 +40,20 @@ export function drawBatterSprite(ctx, batter, batterFrames) {
 export function drawBall(ctx, ball, gameState, batContactY) {
   if (!ball || !ball.active) return;
 
-  // Ground shadow — projected onto ground plane, grows as ball approaches
-  const distToGround = GROUND_SHADOW_Y - ball.y;
-  if (distToGround >= 0 && distToGround <= 250) {
-    const proximity = 1.0 - (distToGround / 250);
-    const shadowRadiusX = 6 + proximity * 12;
-    const shadowRadiusY = 2 + proximity * 5;
-    const shadowAlpha = 0.05 + proximity * 0.25;
-    ctx.fillStyle = `rgba(0,0,0,${shadowAlpha})`;
-    ctx.beginPath();
-    ctx.ellipse(ball.x, GROUND_SHADOW_Y, shadowRadiusX, shadowRadiusY, 0, 0, Math.PI * 2);
-    ctx.fill();
-  }
+  // Ground shadow — follows ball, offset grows with proximity (perspective depth)
+  // Shadow is on the ground directly below the ball, appearing ahead (higher Y)
+  // As ball approaches batter, the gap between ball and shadow increases
+  const t = Math.min(ball.progress || 0, 1.0);
+  const shadowOffsetY = BALL_SHADOW_OFFSET_MIN + t * (BALL_SHADOW_OFFSET_MAX - BALL_SHADOW_OFFSET_MIN);
+  const shadowX = ball.x;
+  const shadowY = ball.y + shadowOffsetY;
+  const shadowRadiusX = 4 + t * 14;
+  const shadowRadiusY = 1.5 + t * 5;
+  const shadowAlpha = 0.06 + t * 0.26;
+  ctx.fillStyle = `rgba(0,0,0,${shadowAlpha})`;
+  ctx.beginPath();
+  ctx.ellipse(shadowX, shadowY, shadowRadiusX, shadowRadiusY, 0, 0, Math.PI * 2);
+  ctx.fill();
 
   // Timing hint glow — gold glow when ball approaches bat contact zone (PITCHING only)
   const hintYEnd = batContactY;
@@ -325,6 +327,61 @@ export function drawReady(ctx) {
   ctx.strokeText('Space キーでスタート', CANVAS_WIDTH / 2, 380);
   ctx.fillStyle = '#ffffff';
   ctx.fillText('Space キーでスタート', CANVAS_WIDTH / 2, 380);
+
+  ctx.restore();
+}
+
+// =============================================
+// Debug Overlay
+// =============================================
+
+export function drawDebugOverlay(ctx, d) {
+  const panelY = 640;
+  const panelH = 80;
+
+  // Semi-transparent background
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+  ctx.fillRect(0, panelY, CANVAS_WIDTH, panelH);
+
+  ctx.save();
+  ctx.font = '11px monospace';
+  ctx.fillStyle = '#00ff00';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+
+  const x = 8;
+  const lineH = 15;
+
+  // Row 1: Pitch info + batter position
+  const course = d.pitchCourse || '';
+  const r1 = `#${d.pitchNumber} | ${d.pitchType} ${course} ${d.pitchSpeed}px/s | Batter(${d.batterX}, ${d.batterY}) | Swing:${d.swingState}`;
+  ctx.fillText(r1, x, panelY + 4);
+
+  // Row 2: Hit detection details (after first hit)
+  if (d.lastTiming !== null) {
+    const side = d.lastSweetSpotSide || '-';
+    const sweet = d.lastSweetSpotDist !== null ? `${d.lastSweetSpotDist}px(${side})` : '-';
+    const dev = d.lastDeviationDeg !== null ? `${d.lastDeviationDeg}deg` : '-';
+    const r2 = `Sweet:${sweet} | Timing:${d.lastTiming}(${dev}) | xGap:${d.lastXGap}px | Dir:${d.lastDirectionAngle}deg`;
+    ctx.fillText(r2, x, panelY + 4 + lineH);
+  }
+
+  // Row 3: Result (color-coded)
+  if (d.lastJudgment !== null) {
+    const dist = d.lastDistance > 0 ? `${d.lastDistance}m` : '';
+    const r3 = `Result: ${d.lastJudgment} ${dist} | batAngle:${d.lastBatAngle}deg`;
+    ctx.fillStyle = d.lastJudgment === 'HOME_RUN' ? '#FFD700' :
+                    d.lastJudgment === 'HIT' ? '#ffffff' :
+                    d.lastJudgment === 'FOUL' ? '#FFAA00' : '#FF4444';
+    ctx.fillText(r3, x, panelY + 4 + lineH * 2);
+  }
+
+  // Row 4: Live ball position
+  ctx.fillStyle = '#00ff00';
+  if (d.ballY !== null) {
+    const r4 = `Ball.y:${d.ballY} | BatContact.y:${d.batContactY}`;
+    ctx.fillText(r4, x, panelY + 4 + lineH * 3);
+  }
 
   ctx.restore();
 }

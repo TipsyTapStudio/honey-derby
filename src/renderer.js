@@ -8,7 +8,6 @@ import {
   SCOREBOARD_BG, SCOREBOARD_BORDER,
   HR_QUOTA,
   BALL_SHADOW_OFFSET_MIN, BALL_SHADOW_OFFSET_MAX,
-  TIMING_HINT_ENABLED, TIMING_HINT_Y_RANGE,
   HEARTBEAT_ICON_X, HEARTBEAT_ICON_Y,
   HEARTBEAT_ICON_MIN_SIZE, HEARTBEAT_ICON_MAX_SIZE,
   HEARTBEAT_COLOR
@@ -40,7 +39,7 @@ export function drawBatterSprite(ctx, batter, batterFrames) {
 // Ball
 // =============================================
 
-export function drawBall(ctx, ball, gameState, batContactY) {
+export function drawBall(ctx, ball) {
   if (!ball || !ball.active) return;
 
   // Ground shadow — follows ball, offset grows with proximity (perspective depth)
@@ -57,27 +56,6 @@ export function drawBall(ctx, ball, gameState, batContactY) {
   ctx.beginPath();
   ctx.ellipse(shadowX, shadowY, shadowRadiusX, shadowRadiusY, 0, 0, Math.PI * 2);
   ctx.fill();
-
-  // Timing hint glow — gold glow when ball approaches bat contact zone (PITCHING only)
-  const hintYEnd = batContactY;
-  const hintYStart = batContactY - TIMING_HINT_Y_RANGE;
-  if (TIMING_HINT_ENABLED && gameState === 'PITCHING' &&
-      ball.y >= hintYStart && ball.y <= hintYEnd) {
-    const progress = (ball.y - hintYStart) / TIMING_HINT_Y_RANGE;
-    const glowRadius = ball.radius * (2.5 + progress * 2.0);
-    const alpha = 0.15 + progress * 0.45;
-    const gradient = ctx.createRadialGradient(
-      ball.x, ball.y, ball.radius * 0.5,
-      ball.x, ball.y, glowRadius
-    );
-    gradient.addColorStop(0, `rgba(255, 215, 0, ${alpha})`);
-    gradient.addColorStop(0.5, `rgba(255, 165, 0, ${alpha * 0.5})`);
-    gradient.addColorStop(1, 'rgba(255, 100, 0, 0)');
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.arc(ball.x, ball.y, glowRadius, 0, Math.PI * 2);
-    ctx.fill();
-  }
 
   // Ball shadow (follows ball — gives volume/depth to the ball itself)
   ctx.fillStyle = 'rgba(0,0,0,0.2)';

@@ -41,7 +41,7 @@ export const BAT_TIP_OFFSET = 80;     // バット先端オフセット(px) (旧
 export const BAT_CONTACT_Y_OFFSET = 65; // バットの打点Y = batter.y - この値 (打点をさらに下げる)
 
 // --- Ball ---
-export const BALL_SPEED = 280;        // px/sec (遠近感カーブと合わせて体感速度アップ)
+export const BALL_SPEED = 350;        // px/sec (急カーブ pow2.5 に合わせて速度アップ)
 export const BALL_START_RADIUS = 4;
 export const BALL_END_RADIUS = 14;
 

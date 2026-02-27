@@ -41,7 +41,7 @@ export class Ball {
     // Perspective ease-in: ball appears slow far away, accelerates as it approaches
     // progress is linear (0→1), visualProgress applies power curve for depth illusion
     const clamped = Math.min(this.progress, 1);
-    const visualProgress = Math.pow(clamped, 1.8);
+    const visualProgress = Math.pow(clamped, 2.5);
     // For progress > 1 (ball past batter), use linear extension
     const effectiveProgress = this.progress <= 1 ? visualProgress : visualProgress + (this.progress - 1);
 

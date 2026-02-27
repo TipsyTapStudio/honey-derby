@@ -301,7 +301,7 @@ export class Game {
 
     // Layer 3: Ball (pitched) — バッターの裏を通る(奥から来る球)
     if (this.ball && this.ball.active) {
-      Renderer.drawBall(this.ctx, this.ball, this.state, this.batter.getBatContactY());
+      Renderer.drawBall(this.ctx, this.ball);
     }
 
     // Layer 4: Batter sprite

@@ -15,7 +15,7 @@ import {
  * Called each frame during Impact phase.
  * Returns HitResult or null (no contact).
  */
-export function evaluate(ball, batter) {
+export function evaluate(ball, batter, powerMultiplier = 1.0) {
   const batContactY = batter.getBatContactY();
   const batZoneTop = batContactY - BAT_HITZONE_HEIGHT / 2;
   const batZoneBottom = batContactY + BAT_HITZONE_HEIGHT / 2;
@@ -58,6 +58,10 @@ export function evaluate(ball, batter) {
     distance = edgeValue * (1 - falloff);
   }
   distance = Math.max(0, Math.round(distance));
+
+  // Step 3.5: Apply heartbeat power multiplier
+  // パワー倍率を飛距離に掛ける（鼓動のピーク=1.0, 谷=MIN_POWER）
+  distance = Math.max(0, Math.round(distance * powerMultiplier));
 
   // Step 4: Direction angle from ball Y-offset (where in the zone the ball was hit)
   // Ball Y-offset from bat contact center determines direction:

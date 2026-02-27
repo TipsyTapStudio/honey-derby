@@ -6,11 +6,14 @@
 //   node sim/simulate.js                        # デフォルト: 3コース全部のタイミングスイープ
 //   node sim/simulate.js --course=middle         # 真ん中コースのみ
 //   node sim/simulate.js --mode=position         # バッターX位置スイープ
+//   node sim/simulate.js --mode=beat             # パワー × タイミング → HR体積
 //   node sim/simulate.js --mode=single --course=middle --bally=480
+//   node sim/simulate.js --power=0.7             # パワー倍率を手動指定
 //   node sim/simulate.js --help
 //
 // evaluate() を直接呼び出すことで、プレビュー不要で打撃判定を検証。
 // ball.y を変えること = スイングタイミングの早い/遅いを表現。
+// --power でハートビートのパワー倍率を指定。
 
 import { evaluate } from '../src/hitDetector.js';
 import {
@@ -23,6 +26,7 @@ import {
   BATTER_MIN_X, BATTER_MAX_X,
   BAT_IMPACT_END_ANGLE,
   SWEET_SPOT_INSET,
+  HEARTBEAT_MIN_POWER,
 } from '../src/constants.js';
 
 // ============================================
@@ -74,9 +78,10 @@ const COURSES = {
  * @param {number} ballY   ボールのY座標(=スイングタイミング)
  * @param {number} batterX バッターX位置
  * @param {number} batterY バッターY位置
+ * @param {number} power   パワー倍率 (0.0〜1.0, デフォルト1.0)
  * @returns {object} 判定結果 or null(空振り)
  */
-function simulateHit(courseX, ballY, batterX, batterY) {
+function simulateHit(courseX, ballY, batterX, batterY, power = 1.0) {
   const ball = { x: courseX, y: ballY };
   const batter = {
     x: batterX,
@@ -85,7 +90,7 @@ function simulateHit(courseX, ballY, batterX, batterY) {
     getBatCenterX() { return this.x + BAT_TIP_OFFSET; },
     getBatContactY() { return this.y - BAT_CONTACT_Y_OFFSET; },
   };
-  return evaluate(ball, batter);
+  return evaluate(ball, batter, power);
 }
 
 /**
@@ -106,6 +111,7 @@ function runTimingMode(options) {
 
   const batterX = options.bx;
   const batterY = options.by;
+  const power = options.power;
   const batContactY = getBatContactY(batterY);
   const step = options.step || 5;
 
@@ -114,6 +120,8 @@ function runTimingMode(options) {
   const yMin = batContactY - BAT_HITZONE_HEIGHT / 2 - margin;
   const yMax = batContactY + BAT_HITZONE_HEIGHT / 2 + margin;
 
+  const powerLabel = power < 1.0 ? `  power=${(power * 100).toFixed(0)}%` : '';
+
   for (const courseKey of courseKeys) {
     const course = COURSES[courseKey];
     const batCenterX = batterX + BAT_TIP_OFFSET;
@@ -121,7 +129,7 @@ function runTimingMode(options) {
 
     console.log('');
     console.log(c(C.BOLD, `═══════════════════════════════════════════════════════════════════════`));
-    console.log(c(C.BOLD, ` コース: ${course.label}  |  バッター: x=${batterX}, y=${batterY}`));
+    console.log(c(C.BOLD, ` コース: ${course.label}  |  バッター: x=${batterX}, y=${batterY}${powerLabel}`));
     console.log(c(C.DIM, ` batContactY=${batContactY}  batCenterX=${batCenterX}  sweetCenterX=${sweetCenterX}`));
     console.log(c(C.BOLD, `═══════════════════════════════════════════════════════════════════════`));
     console.log(c(C.HEADER, ` ballY | judgment | dist  | dir   | timing | sweet | side   | xGap`));
@@ -130,7 +138,7 @@ function runTimingMode(options) {
     const counts = { HOME_RUN: 0, HIT: 0, FOUL: 0, STRIKE: 0 };
 
     for (let ballY = yMin; ballY <= yMax; ballY += step) {
-      const result = simulateHit(course.x, ballY, batterX, batterY);
+      const result = simulateHit(course.x, ballY, batterX, batterY, power);
       const isJust = Math.round(ballY) === Math.round(batContactY);
 
       if (result) {
@@ -188,37 +196,42 @@ function runTimingMode(options) {
 
   // 3コース比較サマリー
   if (courseKeys.length > 1) {
-    console.log('');
-    console.log(c(C.BOLD, `═══════════════════════════════════════════════════════════════════════`));
-    console.log(c(C.BOLD, ` 難易度比較サマリー (バッター: x=${batterX}, y=${batterY}, step=${step}px)`));
-    console.log(c(C.BOLD, `═══════════════════════════════════════════════════════════════════════`));
-    console.log(c(C.HEADER, `          | HR  | HIT | FOUL| K/M | HR率   | 安打率  | 難易度`));
-    console.log(c(C.DIM,    ` ---------+-----+-----+-----+-----+--------+---------+-------`));
+    printCourseSummary(courseKeys, yMin, yMax, step, batterX, batterY, power);
+  }
+}
 
-    for (const courseKey of courseKeys) {
-      const course = COURSES[courseKey];
-      const counts = { HOME_RUN: 0, HIT: 0, FOUL: 0, STRIKE: 0 };
-      for (let ballY = yMin; ballY <= yMax; ballY += step) {
-        const result = simulateHit(course.x, ballY, batterX, batterY);
-        if (result) counts[result.judgment]++;
-        else counts.STRIKE++;
-      }
-      const total = Object.values(counts).reduce((a, b) => a + b, 0);
-      const hrRate = ((counts.HOME_RUN / total) * 100).toFixed(1);
-      const hitRate = (((counts.HOME_RUN + counts.HIT) / total) * 100).toFixed(1);
-      const difficulty = counts.HOME_RUN >= 5 ? '★☆☆ 易' :
-                         counts.HOME_RUN >= 3 ? '★★☆ 中' : '★★★ 難';
-      console.log(
-        ` ${course.label.padEnd(9)}| ` +
-        `${String(counts.HOME_RUN).padStart(3)} | ` +
-        `${String(counts.HIT).padStart(3)} | ` +
-        `${String(counts.FOUL).padStart(3)} | ` +
-        `${String(counts.STRIKE).padStart(3)} | ` +
-        `${hrRate.padStart(5)}% | ` +
-        `${hitRate.padStart(6)}% | ` +
-        `${difficulty}`
-      );
+function printCourseSummary(courseKeys, yMin, yMax, step, batterX, batterY, power) {
+  const powerLabel = power < 1.0 ? `, power=${(power * 100).toFixed(0)}%` : '';
+  console.log('');
+  console.log(c(C.BOLD, `═══════════════════════════════════════════════════════════════════════`));
+  console.log(c(C.BOLD, ` 難易度比較サマリー (バッター: x=${batterX}, y=${batterY}, step=${step}px${powerLabel})`));
+  console.log(c(C.BOLD, `═══════════════════════════════════════════════════════════════════════`));
+  console.log(c(C.HEADER, `          | HR  | HIT | FOUL| K/M | HR率   | 安打率  | 難易度`));
+  console.log(c(C.DIM,    ` ---------+-----+-----+-----+-----+--------+---------+-------`));
+
+  for (const courseKey of courseKeys) {
+    const course = COURSES[courseKey];
+    const counts = { HOME_RUN: 0, HIT: 0, FOUL: 0, STRIKE: 0 };
+    for (let ballY = yMin; ballY <= yMax; ballY += step) {
+      const result = simulateHit(course.x, ballY, batterX, batterY, power);
+      if (result) counts[result.judgment]++;
+      else counts.STRIKE++;
     }
+    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+    const hrRate = ((counts.HOME_RUN / total) * 100).toFixed(1);
+    const hitRate = (((counts.HOME_RUN + counts.HIT) / total) * 100).toFixed(1);
+    const difficulty = counts.HOME_RUN >= 5 ? '★☆☆ 易' :
+                       counts.HOME_RUN >= 3 ? '★★☆ 中' : '★★★ 難';
+    console.log(
+      ` ${course.label.padEnd(9)}| ` +
+      `${String(counts.HOME_RUN).padStart(3)} | ` +
+      `${String(counts.HIT).padStart(3)} | ` +
+      `${String(counts.FOUL).padStart(3)} | ` +
+      `${String(counts.STRIKE).padStart(3)} | ` +
+      `${hrRate.padStart(5)}% | ` +
+      `${hitRate.padStart(6)}% | ` +
+      `${difficulty}`
+    );
   }
 }
 
@@ -228,15 +241,17 @@ function runTimingMode(options) {
 
 function runPositionMode(options) {
   const batterY = options.by;
+  const power = options.power;
   const batContactY = getBatContactY(batterY);
   const step = options.step || 10;
 
   // ballY = batContactY (ジャストタイミング)
   const ballY = batContactY;
+  const powerLabel = power < 1.0 ? `  power=${(power * 100).toFixed(0)}%` : '';
 
   console.log('');
   console.log(c(C.BOLD, `═══════════════════════════════════════════════════════════════════════`));
-  console.log(c(C.BOLD, ` Mode: バッターX位置スイープ  |  ballY=${ballY}(just)  batterY=${batterY}`));
+  console.log(c(C.BOLD, ` Mode: バッターX位置スイープ  |  ballY=${ballY}(just)  batterY=${batterY}${powerLabel}`));
   console.log(c(C.BOLD, `═══════════════════════════════════════════════════════════════════════`));
   console.log(c(C.HEADER, ` BatterX | batCX | 内角(${COURSE_INSIDE_X})           | 真ん中(${COURSE_MIDDLE_X})          | 外角(${COURSE_OUTSIDE_X})`));
   console.log(c(C.DIM,    ` --------+-------+------------------------+-----------------------+------------------------`));
@@ -247,7 +262,7 @@ function runPositionMode(options) {
 
     for (const courseKey of ['inside', 'middle', 'outside']) {
       const course = COURSES[courseKey];
-      const result = simulateHit(course.x, ballY, bx, batterY);
+      const result = simulateHit(course.x, ballY, bx, batterY, power);
 
       if (result) {
         const dir = (result.direction >= 0 ? '+' : '') + result.direction + '°';
@@ -268,7 +283,7 @@ function runPositionMode(options) {
   for (let bx = BATTER_MIN_X; bx <= BATTER_MAX_X; bx += step) {
     let hrCount = 0;
     for (const courseKey of ['inside', 'middle', 'outside']) {
-      const result = simulateHit(COURSES[courseKey].x, ballY, bx, batterY);
+      const result = simulateHit(COURSES[courseKey].x, ballY, bx, batterY, power);
       if (result && result.judgment === 'HOME_RUN') hrCount++;
     }
     const bar = '█'.repeat(hrCount) + '░'.repeat(3 - hrCount);
@@ -285,6 +300,7 @@ function runSingleMode(options) {
   const course = COURSES[options.course] || COURSES.middle;
   const batterX = options.bx;
   const batterY = options.by;
+  const power = options.power;
   const batContactY = getBatContactY(batterY);
   const ballY = options.bally != null ? options.bally : batContactY;
 
@@ -300,8 +316,9 @@ function runSingleMode(options) {
   console.log(`   batContactY: ${batContactY}`);
   console.log(`   ballY:       ${ballY}`);
   console.log(`   ballY - batContactY: ${ballY - batContactY} (+ = late, - = early)`);
+  console.log(`   power:       ${(power * 100).toFixed(0)}%`);
 
-  const result = simulateHit(course.x, ballY, batterX, batterY);
+  const result = simulateHit(course.x, ballY, batterX, batterY, power);
 
   console.log('');
   if (result) {
@@ -330,6 +347,103 @@ function runSingleMode(options) {
 }
 
 // ============================================
+// Mode 4: ビートスイープ (パワー × タイミング → HR体積)
+// ============================================
+
+function runBeatMode(options) {
+  const courseKeys = options.course === 'all'
+    ? ['inside', 'middle', 'outside']
+    : [options.course];
+
+  const batterX = options.bx;
+  const batterY = options.by;
+  const batContactY = getBatContactY(batterY);
+  const yStep = options.step || 5;
+
+  const margin = 10;
+  const yMin = batContactY - BAT_HITZONE_HEIGHT / 2 - margin;
+  const yMax = batContactY + BAT_HITZONE_HEIGHT / 2 + margin;
+
+  // パワー倍率のステップ: MIN_POWER から 1.0 まで 0.1 刻み
+  const powerSteps = [];
+  for (let p = HEARTBEAT_MIN_POWER; p <= 1.01; p += 0.1) {
+    powerSteps.push(Math.round(p * 100) / 100);
+  }
+
+  console.log('');
+  console.log(c(C.BOLD, `═══════════════════════════════════════════════════════════════════════════════`));
+  console.log(c(C.BOLD, ` Mode: ビートスイープ — パワー倍率 × タイミング → HR体積`));
+  console.log(c(C.BOLD, ` バッター: x=${batterX}, y=${batterY}  |  パワー範囲: ${HEARTBEAT_MIN_POWER}〜1.0`));
+  console.log(c(C.BOLD, `═══════════════════════════════════════════════════════════════════════════════`));
+
+  // ヘッダー: パワー倍率
+  let header = `          |`;
+  for (const p of powerSteps) {
+    header += ` ${(p * 100).toFixed(0).padStart(3)}% |`;
+  }
+  console.log(c(C.HEADER, ` コース    ${header}`));
+
+  const divider = ` ---------+${powerSteps.map(() => '------+').join('')}`;
+  console.log(c(C.DIM, divider));
+
+  for (const courseKey of courseKeys) {
+    const course = COURSES[courseKey];
+    let row = ` ${course.label.padEnd(9)}|`;
+
+    for (const p of powerSteps) {
+      const counts = { HOME_RUN: 0, HIT: 0, FOUL: 0, STRIKE: 0 };
+      for (let ballY = yMin; ballY <= yMax; ballY += yStep) {
+        const result = simulateHit(course.x, ballY, batterX, batterY, p);
+        if (result) counts[result.judgment]++;
+        else counts.STRIKE++;
+      }
+      const hrCount = counts.HOME_RUN;
+      const hrStr = hrCount > 0 ? c(C.HR, String(hrCount).padStart(4)) : c(C.DIM, '   0');
+      row += ` ${hrStr} |`;
+    }
+    console.log(row);
+  }
+
+  console.log(c(C.DIM, divider));
+
+  // 合計HR体積
+  let totalRow = c(C.BOLD, ` 合計HR   `) + `|`;
+  for (const p of powerSteps) {
+    let total = 0;
+    for (const courseKey of courseKeys) {
+      const course = COURSES[courseKey];
+      for (let ballY = yMin; ballY <= yMax; ballY += yStep) {
+        const result = simulateHit(course.x, ballY, batterX, batterY, p);
+        if (result && result.judgment === 'HOME_RUN') total++;
+      }
+    }
+    const totalStr = total > 0 ? c(C.HR, String(total).padStart(4)) : c(C.DIM, '   0');
+    totalRow += ` ${totalStr} |`;
+  }
+  console.log(totalRow);
+
+  // HR率の可視化バー
+  console.log('');
+  console.log(c(C.BOLD, ` パワー別 HR体積 (全コース合計):`));
+  for (const p of powerSteps) {
+    let total = 0;
+    let possible = 0;
+    for (const courseKey of courseKeys) {
+      const course = COURSES[courseKey];
+      for (let ballY = yMin; ballY <= yMax; ballY += yStep) {
+        possible++;
+        const result = simulateHit(course.x, ballY, batterX, batterY, p);
+        if (result && result.judgment === 'HOME_RUN') total++;
+      }
+    }
+    const rate = ((total / possible) * 100).toFixed(1);
+    const barLen = Math.round(total / 2);
+    const bar = '█'.repeat(barLen);
+    console.log(`  ${(p * 100).toFixed(0).padStart(3)}%: ${c(C.HR, bar.padEnd(20))} ${total}HR (${rate}%)`);
+  }
+}
+
+// ============================================
 // 引数パーサー
 // ============================================
 
@@ -341,6 +455,7 @@ function parseArgs() {
     bx: BATTER_X,
     by: BATTER_Y,
     bally: null,
+    power: 1.0,
     step: null,
     help: false,
   };
@@ -357,6 +472,7 @@ function parseArgs() {
       else if (key === 'bx') opts.bx = Number(val);
       else if (key === 'by') opts.by = Number(val);
       else if (key === 'bally') opts.bally = Number(val);
+      else if (key === 'power') opts.power = Number(val);
       else if (key === 'step') opts.step = Number(val);
     }
   }
@@ -378,6 +494,7 @@ ${c(C.HEADER, '使い方:')}
 ${c(C.HEADER, 'モード:')}
   --mode=timing     (デフォルト) ballYスイープ → タイミング別の判定分布
   --mode=position   バッターX位置スイープ → ポジション別の判定
+  --mode=beat       パワー倍率スイープ → コース別HR体積(難易度分析)
   --mode=single     1シナリオの詳細出力
 
 ${c(C.HEADER, 'オプション:')}
@@ -385,6 +502,7 @@ ${c(C.HEADER, 'オプション:')}
   --bx=NUMBER       バッターX位置 (デフォルト: ${BATTER_X}, 範囲: ${BATTER_MIN_X}-${BATTER_MAX_X})
   --by=NUMBER       バッターY位置 (デフォルト: ${BATTER_Y})
   --bally=NUMBER    ボールY位置 (singleモード用)
+  --power=NUMBER    パワー倍率 0.0〜1.0 (デフォルト: 1.0, beat以外のモード用)
   --step=NUMBER     スイープ刻み幅 (デフォルト: timing=5, position=10)
   --no-color        カラー出力を無効化
   --help            このヘルプを表示
@@ -392,10 +510,10 @@ ${c(C.HEADER, 'オプション:')}
 ${c(C.HEADER, '使用例:')}
   node sim/simulate.js                              # 3コース全部のタイミング分布
   node sim/simulate.js --course=middle              # 真ん中コースのみ
-  node sim/simulate.js --course=middle --step=2     # 2px刻みで細かく
+  node sim/simulate.js --power=0.5                  # パワー50%での分布
+  node sim/simulate.js --mode=beat                  # パワー×コース HR体積分析
   node sim/simulate.js --mode=position              # バッター位置別の判定
-  node sim/simulate.js --mode=single --course=inside --bally=475
-  node sim/simulate.js --bx=130                     # バッター位置をずらして確認
+  node sim/simulate.js --mode=single --course=inside --bally=475 --power=0.8
 
 ${c(C.HEADER, '概念:')}
   ballY はスイングタイミングを表す:
@@ -403,7 +521,11 @@ ${c(C.HEADER, '概念:')}
     ballY = batContactY → ジャストミート (just)
     ballY > batContactY → ボールが低い位置 = 振り遅れ (late)
 
-  HR面積(HR率) = そのコースの打ちやすさ = 難易度指標
+  power はハートビートのパワー倍率:
+    1.0 = ピーク(♥大) → 最大飛距離
+    ${HEARTBEAT_MIN_POWER} = 谷(♥小)   → 飛距離×${HEARTBEAT_MIN_POWER}
+
+  HR体積 = HR率 × パワー分布 = そのコースの真の難易度
 `);
 }
 
@@ -432,11 +554,14 @@ function main() {
     case 'position':
       runPositionMode(opts);
       break;
+    case 'beat':
+      runBeatMode(opts);
+      break;
     case 'single':
       runSingleMode(opts);
       break;
     default:
-      console.error(`不明なモード: ${opts.mode} (timing, position, single のいずれかを指定)`);
+      console.error(`不明なモード: ${opts.mode} (timing, position, beat, single のいずれかを指定)`);
       process.exit(1);
   }
 

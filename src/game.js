@@ -10,6 +10,7 @@ import { Batter } from './batter.js';
 import { Ball } from './ball.js';
 import { BallFlight } from './ballFlight.js';
 import { ResultDisplay } from './resultDisplay.js';
+import { HeartBeat } from './heartbeat.js';
 import * as HitDetector from './hitDetector.js';
 import * as Renderer from './renderer.js';
 
@@ -27,6 +28,7 @@ export class Game {
     this.ball = null;
     this.ballFlight = null;
     this.resultDisplay = new ResultDisplay();
+    this.heartbeat = new HeartBeat();
     this.lastTimestamp = 0;
 
     this.inputState = { left: false, right: false, up: false, down: false, space: false };
@@ -51,6 +53,8 @@ export class Game {
       ballY: null,
       batContactY: null,
       lastBatAngle: null,
+      // Heartbeat
+      lastPower: null,
       // Per-hit data
       lastSweetSpotDist: null,
       lastSweetSpotSide: null,
@@ -104,6 +108,7 @@ export class Game {
       case 'COUNTDOWN':
         this.pitcher.updateCountdown(dt);
         this.batter.update(dt, this.inputState);
+        this.heartbeat.update(dt);
         if (this.pitcher.isCountdownComplete()) {
           // TODO: audioManager.play('se_pitch')
           this.transitionTo('PITCHING');
@@ -113,10 +118,12 @@ export class Game {
       case 'PITCHING':
         this.ball.update(dt);
         this.batter.update(dt, this.inputState);
+        this.heartbeat.update(dt);
 
         // Check for hit during extended hit window (impact + early followthrough)
         if (this.batter.isInHitWindow() && this.ball && this.ball.active) {
-          const result = HitDetector.evaluate(this.ball, this.batter);
+          const power = this.heartbeat.getMultiplier();
+          const result = HitDetector.evaluate(this.ball, this.batter, power);
           if (result) {
             // For HR/HIT/FOUL: deactivate ball (ballFlight takes over)
             // For contact-STRIKE: keep ball alive for pass-through animation
@@ -197,10 +204,12 @@ export class Game {
       this.remainingPitches = TOTAL_PITCHES - this.pitchCount;
     }
 
-    console.log(`[PITCH ${this.pitchCount}] ${result.judgment} | timing: ${result.timing} | xGap: ${result.xGap}px | angle: ${result.direction}° | distance: ${result.distance}m`);
+    const powerLog = result.hit ? ` | power: ${Math.round(this.heartbeat.getMultiplier() * 100)}%` : '';
+    console.log(`[PITCH ${this.pitchCount}] ${result.judgment} | timing: ${result.timing} | xGap: ${result.xGap}px | angle: ${result.direction}° | distance: ${result.distance}m${powerLog}`);
 
     // Store debug data
     this.debugData.pitchNumber = this.pitchCount;
+    this.debugData.lastPower = result.hit ? Math.round(this.heartbeat.getMultiplier() * 100) : null;
     this.debugData.lastTiming = result.timing;
     this.debugData.lastDirectionAngle = result.direction;
     this.debugData.lastJudgment = result.judgment;
@@ -263,6 +272,7 @@ export class Game {
     this.remainingPitches = TOTAL_PITCHES;
     this.cleared = false;
     this.batter.reset();
+    this.heartbeat.reset();
     this.ball = null;
     this.ballFlight = null;
   }
@@ -307,6 +317,9 @@ export class Game {
       homeRuns: this.homeRuns,
       remainingPitches: this.remainingPitches
     });
+
+    // Heartbeat icon (pulsing heart below scoreboard)
+    Renderer.drawHeartbeat(this.ctx, this.heartbeat);
 
     // State-specific overlays
     switch (this.state) {

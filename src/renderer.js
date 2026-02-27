@@ -8,7 +8,10 @@ import {
   SCOREBOARD_BG, SCOREBOARD_BORDER,
   HR_QUOTA,
   BALL_SHADOW_OFFSET_MIN, BALL_SHADOW_OFFSET_MAX,
-  TIMING_HINT_ENABLED, TIMING_HINT_Y_RANGE
+  TIMING_HINT_ENABLED, TIMING_HINT_Y_RANGE,
+  HEARTBEAT_ICON_X, HEARTBEAT_ICON_Y,
+  HEARTBEAT_ICON_MIN_SIZE, HEARTBEAT_ICON_MAX_SIZE,
+  HEARTBEAT_COLOR
 } from './constants.js';
 
 // =============================================
@@ -221,6 +224,73 @@ export function drawScoreboard(ctx, gameState) {
   ctx.restore();
 }
 
+// =============================================
+// Heartbeat (pulsing heart icon)
+// =============================================
+
+/**
+ * ハートをベジェ曲線で描画
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} cx  中心X
+ * @param {number} cy  中心Y
+ * @param {number} size ハートの幅(≈高さ)
+ */
+function drawHeartShape(ctx, cx, cy, size) {
+  const s = size / 2;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy + s * 0.4); // 下部の尖端
+  // 左半分
+  ctx.bezierCurveTo(cx - s * 1.2, cy - s * 0.2, cx - s * 0.6, cy - s * 1.0, cx, cy - s * 0.4);
+  // 右半分
+  ctx.bezierCurveTo(cx + s * 0.6, cy - s * 1.0, cx + s * 1.2, cy - s * 0.2, cx, cy + s * 0.4);
+  ctx.closePath();
+}
+
+export function drawHeartbeat(ctx, heartbeat) {
+  const power = heartbeat.getPower(); // 0.0 〜 1.0
+  const size = HEARTBEAT_ICON_MIN_SIZE + power * (HEARTBEAT_ICON_MAX_SIZE - HEARTBEAT_ICON_MIN_SIZE);
+  const cx = HEARTBEAT_ICON_X;
+  const cy = HEARTBEAT_ICON_Y;
+
+  ctx.save();
+
+  // Glow effect at high power
+  if (power > 0.6) {
+    const glowAlpha = (power - 0.6) * 1.5; // 0 ~ 0.6
+    ctx.shadowColor = HEARTBEAT_COLOR;
+    ctx.shadowBlur = 10 + power * 15;
+    ctx.globalAlpha = 0.3 + glowAlpha * 0.4;
+    drawHeartShape(ctx, cx, cy, size * 1.3);
+    ctx.fillStyle = HEARTBEAT_COLOR;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1.0;
+  }
+
+  // Main heart
+  drawHeartShape(ctx, cx, cy, size);
+  ctx.fillStyle = HEARTBEAT_COLOR;
+  ctx.fill();
+
+  // Outline
+  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+  ctx.lineWidth = 1.5;
+  drawHeartShape(ctx, cx, cy, size);
+  ctx.stroke();
+
+  // Highlight (small white arc at top-left of heart)
+  if (size > 16) {
+    ctx.globalAlpha = 0.3 + power * 0.3;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(cx - size * 0.15, cy - size * 0.15, size * 0.12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1.0;
+  }
+
+  ctx.restore();
+}
+
 export function drawResult(ctx, resultDisplay) {
   if (!resultDisplay.active) return;
 
@@ -369,7 +439,8 @@ export function drawDebugOverlay(ctx, d) {
   // Row 3: Result (color-coded)
   if (d.lastJudgment !== null) {
     const dist = d.lastDistance > 0 ? `${d.lastDistance}m` : '';
-    const r3 = `Result: ${d.lastJudgment} ${dist} | batAngle:${d.lastBatAngle}deg`;
+    const powerStr = d.lastPower !== null ? ` | Power:${d.lastPower}%` : '';
+    const r3 = `Result: ${d.lastJudgment} ${dist}${powerStr} | batAngle:${d.lastBatAngle}deg`;
     ctx.fillStyle = d.lastJudgment === 'HOME_RUN' ? '#FFD700' :
                     d.lastJudgment === 'HIT' ? '#ffffff' :
                     d.lastJudgment === 'FOUL' ? '#FFAA00' : '#FF4444';

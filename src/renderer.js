@@ -422,6 +422,94 @@ export function drawReady(ctx, titleImg, isTouchDevice) {
 }
 
 // =============================================
+// Pause Button & Overlay
+// =============================================
+
+const PAUSE_BTN = { x: 432, y: 8, w: 40, h: 40 };
+
+export function drawPauseButton(ctx) {
+  ctx.save();
+
+  // 半透明の丸背景
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+  ctx.beginPath();
+  ctx.arc(PAUSE_BTN.x + PAUSE_BTN.w / 2, PAUSE_BTN.y + PAUSE_BTN.h / 2, 18, 0, Math.PI * 2);
+  ctx.fill();
+
+  // || マーク（2本の白い縦線）
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+  const bx = PAUSE_BTN.x + PAUSE_BTN.w / 2;
+  const by = PAUSE_BTN.y + PAUSE_BTN.h / 2;
+  const barW = 4;
+  const barH = 14;
+  const gap = 4;
+  ctx.fillRect(bx - gap - barW, by - barH / 2, barW, barH);
+  ctx.fillRect(bx + gap, by - barH / 2, barW, barH);
+
+  ctx.restore();
+}
+
+export function drawPauseOverlay(ctx) {
+  // Full overlay
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+  ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  const cx = CANVAS_WIDTH / 2;
+
+  // PAUSED text
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+  ctx.shadowBlur = 12;
+  ctx.shadowOffsetY = 3;
+  ctx.letterSpacing = '6px';
+  ctx.font = 'bold 56px Arial, Helvetica, sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('PAUSED', cx, 300);
+
+  // --- Buttons ---
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+  ctx.letterSpacing = '2px';
+  const btnRadius = 8;
+
+  const RESUME_BTN = { x: 140, y: 385, w: 200, h: 48 };
+  const TITLE_BTN = { x: 140, y: 448, w: 200, h: 48 };
+
+  // Resume button
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+  ctx.beginPath();
+  ctx.roundRect(RESUME_BTN.x, RESUME_BTN.y, RESUME_BTN.w, RESUME_BTN.h, btnRadius);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(RESUME_BTN.x, RESUME_BTN.y, RESUME_BTN.w, RESUME_BTN.h, btnRadius);
+  ctx.stroke();
+  ctx.font = 'bold 22px Arial, Helvetica, sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('RESUME', cx, RESUME_BTN.y + RESUME_BTN.h / 2);
+
+  // Title button
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+  ctx.beginPath();
+  ctx.roundRect(TITLE_BTN.x, TITLE_BTN.y, TITLE_BTN.w, TITLE_BTN.h, btnRadius);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(TITLE_BTN.x, TITLE_BTN.y, TITLE_BTN.w, TITLE_BTN.h, btnRadius);
+  ctx.stroke();
+  ctx.font = 'bold 22px Arial, Helvetica, sans-serif';
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+  ctx.fillText('TITLE', cx, TITLE_BTN.y + TITLE_BTN.h / 2);
+
+  ctx.restore();
+}
+
+// =============================================
 // Debug Overlay
 // =============================================
 

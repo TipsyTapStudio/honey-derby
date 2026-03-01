@@ -109,17 +109,12 @@ export class AudioManager {
     if (this._unlocked) return;
     this._unlocked = true;
 
-    // 全 SE を音量 0 で一瞬再生し、iOS の初回再生ラグを解消する
-    for (const audio of Object.values(this.sounds)) {
-      const vol = audio.volume;
-      audio.volume = 0;
-      audio.play().then(() => {
-        audio.pause();
-        audio.currentTime = 0;
-        audio.volume = vol;
-      }).catch(() => {
-        audio.volume = vol;
-      });
+    // AudioContext を resume して iOS の音声再生制限を解除
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      ctx.resume().then(() => ctx.close()).catch(() => {});
+    } catch (_) {
+      // AudioContext 非対応環境ではスキップ
     }
   }
 

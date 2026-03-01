@@ -56,6 +56,9 @@ export class Game {
       targetY: BATTER_Y,
     };
 
+    // Pause
+    this.paused = false;
+
     // Debug mode
     this.debugMode = false;
     this.debugData = {
@@ -93,7 +96,9 @@ export class Game {
     dt = Math.min(dt, 0.05); // Clamp to prevent spiral of death
     this.lastTimestamp = timestamp;
 
-    this.update(dt);
+    if (!this.paused) {
+      this.update(dt);
+    }
     this.render();
 
     requestAnimationFrame((ts) => this.loop(ts));
@@ -337,6 +342,19 @@ export class Game {
     this.ballFlight = null;
   }
 
+  pauseGame() {
+    if (this.paused) return;
+    this.paused = true;
+    this.audio.stopAll();
+  }
+
+  resumeGame() {
+    if (!this.paused) return;
+    this.paused = false;
+    // タイムスタンプをリセットして dt 暴走を防ぐ
+    this.lastTimestamp = performance.now();
+  }
+
   returnToTitle() {
     this.resetGame();
     this.state = 'READY';
@@ -403,6 +421,16 @@ export class Game {
         break;
     }
 
+    // Pause button (gameplay 中のみ)
+    if (this.state !== 'READY' && this.state !== 'GAME_OVER') {
+      Renderer.drawPauseButton(this.ctx);
+    }
+
+    // Pause overlay
+    if (this.paused) {
+      Renderer.drawPauseOverlay(this.ctx);
+    }
+
     // Debug overlay (toggled with D key)
     if (this.debugMode) {
       Renderer.drawDebugOverlay(this.ctx, this.debugData);
@@ -410,6 +438,25 @@ export class Game {
   }
 
   handleKeyDown(e) {
+    // Escape でポーズトグル（gameplay 中）/ タイトル戻り（GAME_OVER）
+    if (e.code === 'Escape') {
+      if (this.paused) {
+        this.resumeGame();
+        return;
+      }
+      if (this.state === 'GAME_OVER') {
+        this.inputState.titleReturn = true;
+        return;
+      }
+      if (this.state !== 'READY') {
+        this.pauseGame();
+        return;
+      }
+    }
+
+    // ポーズ中は他のキー入力を無視
+    if (this.paused) return;
+
     if (e.code === 'ArrowLeft') this.inputState.left = true;
     if (e.code === 'ArrowRight') this.inputState.right = true;
     if (e.code === 'ArrowUp') { e.preventDefault(); this.inputState.up = true; }
@@ -417,9 +464,6 @@ export class Game {
     if (e.code === 'Space') {
       e.preventDefault();
       this.inputState.space = true;
-    }
-    if (e.code === 'Escape' && this.state === 'GAME_OVER') {
-      this.inputState.titleReturn = true;
     }
     if (e.code === 'KeyD') {
       this.debugMode = !this.debugMode;
@@ -441,6 +485,23 @@ export class Game {
   handleClick(e, canvasRect) {
     const cx = (e.clientX - canvasRect.left) * (CANVAS_WIDTH / canvasRect.width);
     const cy = (e.clientY - canvasRect.top) * (CANVAS_HEIGHT / canvasRect.height);
+    const inBtn = (btn) => cx >= btn.x && cx <= btn.x + btn.w && cy >= btn.y && cy <= btn.y + btn.h;
+
+    // ポーズ中 → RESUME / TITLE ボタン判定
+    if (this.paused) {
+      const RESUME_BTN = { x: 140, y: 385, w: 200, h: 48 };
+      const TITLE_BTN = { x: 140, y: 448, w: 200, h: 48 };
+      if (inBtn(RESUME_BTN)) this.resumeGame();
+      else if (inBtn(TITLE_BTN)) { this.paused = false; this.returnToTitle(); }
+      return;
+    }
+
+    // || ポーズボタン（gameplay 中のみ）
+    const PAUSE_BTN = { x: 432, y: 8, w: 40, h: 40 };
+    if (this.state !== 'READY' && this.state !== 'GAME_OVER' && inBtn(PAUSE_BTN)) {
+      this.pauseGame();
+      return;
+    }
 
     if (this.state === 'READY') {
       this.inputState.space = true;
@@ -450,7 +511,6 @@ export class Game {
     if (this.state === 'GAME_OVER') {
       const RETRY_BTN = { x: 140, y: 415, w: 200, h: 48 };
       const TITLE_BTN = { x: 140, y: 478, w: 200, h: 48 };
-      const inBtn = (btn) => cx >= btn.x && cx <= btn.x + btn.w && cy >= btn.y && cy <= btn.y + btn.h;
       if (inBtn(RETRY_BTN)) {
         this.inputState.space = true;
       } else if (inBtn(TITLE_BTN)) {
@@ -474,6 +534,23 @@ export class Game {
     e.preventDefault();
     for (const touch of e.changedTouches) {
       const { x: cx, y: cy } = this._touchToCanvas(touch, canvasRect);
+      const inBtn = (btn) => cx >= btn.x && cx <= btn.x + btn.w && cy >= btn.y && cy <= btn.y + btn.h;
+
+      // ポーズ中 → RESUME / TITLE ボタン判定
+      if (this.paused) {
+        const RESUME_BTN = { x: 140, y: 385, w: 200, h: 48 };
+        const TITLE_BTN = { x: 140, y: 448, w: 200, h: 48 };
+        if (inBtn(RESUME_BTN)) this.resumeGame();
+        else if (inBtn(TITLE_BTN)) { this.paused = false; this.returnToTitle(); }
+        return;
+      }
+
+      // || ポーズボタン（gameplay 中のみ）
+      const PAUSE_BTN = { x: 432, y: 8, w: 40, h: 40 };
+      if (this.state !== 'READY' && this.state !== 'GAME_OVER' && inBtn(PAUSE_BTN)) {
+        this.pauseGame();
+        return;
+      }
 
       // READY → any tap = start
       if (this.state === 'READY') {
@@ -485,7 +562,6 @@ export class Game {
       if (this.state === 'GAME_OVER') {
         const RETRY_BTN = { x: 140, y: 415, w: 200, h: 48 };
         const TITLE_BTN = { x: 140, y: 478, w: 200, h: 48 };
-        const inBtn = (btn) => cx >= btn.x && cx <= btn.x + btn.w && cy >= btn.y && cy <= btn.y + btn.h;
         if (inBtn(RETRY_BTN)) {
           this.inputState.space = true;
         } else if (inBtn(TITLE_BTN)) {

@@ -107,14 +107,20 @@ export class AudioManager {
    */
   unlock() {
     if (this._unlocked) return;
-    // 無音の Audio を再生して制限を解除
-    const silent = new Audio();
-    silent.play().then(() => {
-      silent.pause();
-      this._unlocked = true;
-    }).catch(() => {
-      // 失敗しても次のユーザー操作で再試行
-    });
+    this._unlocked = true;
+
+    // 全 SE を音量 0 で一瞬再生し、iOS の初回再生ラグを解消する
+    for (const audio of Object.values(this.sounds)) {
+      const vol = audio.volume;
+      audio.volume = 0;
+      audio.play().then(() => {
+        audio.pause();
+        audio.currentTime = 0;
+        audio.volume = vol;
+      }).catch(() => {
+        audio.volume = vol;
+      });
+    }
   }
 
   /**

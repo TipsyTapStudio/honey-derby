@@ -74,27 +74,23 @@ loader.load((loaded, total) => {
   // タイトル BGM 再生（自動再生ポリシーでブロックされる場合あり）
   audioManager.playBgm('bgm_title', { maxLoops: 1 });
 
-  // 初回ユーザー操作で音声アンロック + BGM 再生を保証
-  const startBgmOnce = () => {
-    audioManager.unlock();
-    if (game.state === 'READY') audioManager.playBgm('bgm_title', { maxLoops: 1 });
-  };
+  // モバイル音声アンロック
+  const unlockAudio = () => audioManager.unlock();
 
-  // モバイル音声アンロック + タッチ入力
+  // モバイルタッチ入力
   const getRect = () => canvas.getBoundingClientRect();
   canvas.addEventListener('touchstart', (e) => {
-    startBgmOnce();
+    unlockAudio();
     game.handleTouchStart(e, getRect());
   }, { passive: false });
   canvas.addEventListener('touchmove', (e) => game.handleTouchMove(e, getRect()), { passive: false });
   canvas.addEventListener('touchend', (e) => game.handleTouchEnd(e), { passive: false });
 
-  // PC マウスクリック（READY/GAME_OVER ボタン + 音声アンロック）
+  // PC マウスクリック
   canvas.addEventListener('click', (e) => {
-    startBgmOnce();
+    unlockAudio();
     game.handleClick(e, getRect());
   });
-  window.addEventListener('keydown', () => startBgmOnce(), { once: true });
 
   window._game = game; // expose for debugging
 

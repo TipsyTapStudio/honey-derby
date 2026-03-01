@@ -207,16 +207,18 @@ export class AudioManager {
 
   /**
    * Stop the currently playing BGM.
+   * 全 BGM 要素を強制停止する（currentBgm 追跡漏れ対策）
    */
   stopBgm() {
-    if (!this.currentBgm) return;
-    const audio = this.bgm[this.currentBgm];
-    if (audio) {
-      // ループカウント用リスナーをクリーンアップ
-      if (this._bgmEndedHandler) {
+    // リスナーをクリーンアップ
+    if (this._bgmEndedHandler) {
+      for (const audio of Object.values(this.bgm)) {
         audio.removeEventListener('ended', this._bgmEndedHandler);
-        this._bgmEndedHandler = null;
       }
+      this._bgmEndedHandler = null;
+    }
+    // 全 BGM 要素を停止
+    for (const audio of Object.values(this.bgm)) {
       audio.pause();
       audio.currentTime = 0;
     }

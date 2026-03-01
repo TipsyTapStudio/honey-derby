@@ -197,8 +197,11 @@ export class AudioManager {
 
     audio.volume = Math.min(1, this.bgmVolume * this.volume);
     audio.currentTime = 0;
-    audio.play().catch(() => {});
     this.currentBgm = name;
+    audio.play().catch(() => {
+      // 自動再生ポリシーでブロックされた → 状態をリセットしてリトライ可能にする
+      if (this.currentBgm === name) this.currentBgm = null;
+    });
   }
 
   /**

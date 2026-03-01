@@ -1,5 +1,6 @@
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from './constants.js';
 import { AssetLoader } from './assetLoader.js';
+import { AudioManager } from './audioManager.js';
 import { Game } from './game.js';
 
 const canvas = document.getElementById('gameCanvas');
@@ -50,22 +51,50 @@ function drawLoading(loaded, total) {
 }
 
 // Show initial loading screen
-drawLoading(0, 13);
+drawLoading(0, 1);
 
-// Load assets then start game
+// Load assets then audio, then start game
 const loader = new AssetLoader();
+const audioManager = new AudioManager();
+
 loader.load((loaded, total) => {
-  drawLoading(loaded, total);
-}).then((assets) => {
-  const game = new Game(canvas, assets);
+  // 画像ロード中は前半分（0〜50%）
+  drawLoading(loaded, total * 2);
+}).then(async (assets) => {
+  // 音声ロード（後半 50%）
+  const imageCount = 14; // AssetLoader のアセット数
+  await audioManager.loadAll((loaded, total) => {
+    drawLoading(imageCount + loaded, imageCount + total);
+  });
+
+  const game = new Game(canvas, assets, audioManager);
   window.addEventListener('keydown', (e) => game.handleKeyDown(e));
   window.addEventListener('keyup', (e) => game.handleKeyUp(e));
 
-  // Touch input (mobile)
+  // タイトル BGM 再生（自動再生ポリシーでブロックされる場合あり）
+  audioManager.playBgm('bgm_title');
+
+  // 初回ユーザー操作で音声アンロック + BGM 再生を保証
+  const startBgmOnce = () => {
+    audioManager.unlock();
+    if (game.state === 'READY') audioManager.playBgm('bgm_title');
+  };
+
+  // モバイル音声アンロック + タッチ入力
   const getRect = () => canvas.getBoundingClientRect();
-  canvas.addEventListener('touchstart', (e) => game.handleTouchStart(e, getRect()), { passive: false });
+  canvas.addEventListener('touchstart', (e) => {
+    startBgmOnce();
+    game.handleTouchStart(e, getRect());
+  }, { passive: false });
   canvas.addEventListener('touchmove', (e) => game.handleTouchMove(e, getRect()), { passive: false });
   canvas.addEventListener('touchend', (e) => game.handleTouchEnd(e), { passive: false });
+
+  // PC マウスクリック（READY/GAME_OVER ボタン + 音声アンロック）
+  canvas.addEventListener('click', (e) => {
+    startBgmOnce();
+    game.handleClick(e, getRect());
+  });
+  window.addEventListener('keydown', () => startBgmOnce(), { once: true });
 
   window._game = game; // expose for debugging
 

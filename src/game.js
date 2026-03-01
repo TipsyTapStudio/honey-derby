@@ -22,10 +22,11 @@ const NULL_INPUT = { left: false, right: false, up: false, down: false, space: f
 const TOUCH_SMOOTHING = 8;
 
 export class Game {
-  constructor(canvas, assets) {
+  constructor(canvas, assets, audioManager) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
     this.assets = assets; // { bg, moai, batter[] }
+    this.audio = audioManager;
     this.isTouchDevice = 'ontouchstart' in window;
     this.state = 'READY'; // READY | COUNTDOWN | PITCHING | RESULT | GAME_OVER
     this.pitcher = new Pitcher();
@@ -115,22 +116,34 @@ export class Game {
       case 'READY':
         // Wait for space to start (rising edge)
         if (spacePressed) {
-          // TODO: audioManager.play('se_game_start')
+          this.audio.play('se_game_start');
           this.transitionTo('COUNTDOWN');
         }
         break;
 
-      case 'COUNTDOWN':
+      case 'COUNTDOWN': {
+        const prevCount = this.pitcher.countdownValue;
         this.pitcher.updateCountdown(dt);
+        const wasIdle = this.batter.swingState === 'idle';
         this.batter.update(dt, this.inputState);
+        // 素振り SE
+        if (wasIdle && this.batter.swingState === 'impact') {
+          this.audio.play('se_swing_miss');
+        }
         this.heartbeat.update(dt);
+        // カウントダウン tick SE (3→2→1)
+        if (this.pitcher.countdownValue < prevCount && this.pitcher.countdownValue > 0) {
+          this.audio.play('se_countdown_tick');
+        }
         if (this.pitcher.isCountdownComplete()) {
-          // TODO: audioManager.play('se_pitch')
+          this.audio.play('se_countdown_go');
+          this.audio.play('se_pitch');
           this.transitionTo('PITCHING');
         }
+      }
         break;
 
-      case 'PITCHING':
+      case 'PITCHING': {
         this.ball.update(dt);
         this.batter.update(dt, this.inputState);
         this.heartbeat.update(dt);
@@ -153,7 +166,7 @@ export class Game {
         // Ball passed batter zone (miss) — keep ball alive for pass-through animation
         if (this.ball && this.ball.active && this.ball.isPastBatter(this.batter.getBatContactY())) {
           // Don't set ball.active = false — let ball continue to screen bottom
-          // TODO: audioManager.play('se_strike')
+          this.audio.play('se_strike');
           this.handleHitResult({
             hit: false,
             timing: 'none',
@@ -164,6 +177,7 @@ export class Game {
           });
         }
         break;
+      }
 
       case 'RESULT':
         this.resultDisplay.update(dt);
@@ -187,7 +201,7 @@ export class Game {
             this.transitionTo('COUNTDOWN');
           } else {
             this.cleared = this.homeRuns >= HR_QUOTA;
-            // TODO: audioManager.play(this.cleared ? 'se_stage_clear' : 'se_game_over')
+            this.audio.play(this.cleared ? 'se_stage_clear' : 'se_game_over');
             this.transitionTo('GAME_OVER');
           }
         }
@@ -258,11 +272,28 @@ export class Game {
     if (result.hit && result.judgment !== 'STRIKE') {
       this.ballFlight = new BallFlight();
       this.ballFlight.launch(result, this.ball.x, this.ball.y);
-      // TODO: audioManager.play('se_hit_xxx') based on judgment
-      // TODO: audioManager.play('se_crowd_xxx') based on judgment
+      // 打撃 SE
+      switch (result.judgment) {
+        case 'HOME_RUN':
+          this.audio.play('se_hit_homerun');
+          this.audio.play('se_flight_hr');
+          // 歓声は少し遅らせて鳴らす（打球が飛んでから）
+          setTimeout(() => this.audio.play('se_crowd_cheer'), 400);
+          break;
+        case 'HIT':
+          this.audio.play('se_hit_foul');
+          break;
+        case 'FOUL':
+          this.audio.play('se_hit_foul');
+          break;
+      }
     } else {
       this.ballFlight = null;
-      // TODO: audioManager.play('se_swing_miss') if swung, or 'se_strike' if not
+      // 弱打（当たったが飛ばない）
+      if (this.batter.swingState !== 'idle' && result.hit) {
+        this.audio.play('se_hit_weak');
+      }
+      // 見逃しの場合は se_strike は上の PITCHING case で再生済み
     }
 
     this.resultDisplay.show(result);
@@ -272,6 +303,7 @@ export class Game {
   transitionTo(newState) {
     switch (newState) {
       case 'COUNTDOWN':
+        this.audio.fadeOutBgm(400);
         this.pitcher.reset();
         this.ball = null;
         this.ballFlight = null;
@@ -308,6 +340,7 @@ export class Game {
   returnToTitle() {
     this.resetGame();
     this.state = 'READY';
+    this.audio.playBgm('bgm_title');
   }
 
   /**
@@ -399,6 +432,31 @@ export class Game {
     if (e.code === 'ArrowUp') this.inputState.up = false;
     if (e.code === 'ArrowDown') this.inputState.down = false;
     if (e.code === 'Space') this.inputState.space = false;
+  }
+
+  // =============================================
+  // Mouse Input (PC)
+  // =============================================
+
+  handleClick(e, canvasRect) {
+    const cx = (e.clientX - canvasRect.left) * (CANVAS_WIDTH / canvasRect.width);
+    const cy = (e.clientY - canvasRect.top) * (CANVAS_HEIGHT / canvasRect.height);
+
+    if (this.state === 'READY') {
+      this.inputState.space = true;
+      return;
+    }
+
+    if (this.state === 'GAME_OVER') {
+      const RETRY_BTN = { x: 140, y: 415, w: 200, h: 48 };
+      const TITLE_BTN = { x: 140, y: 478, w: 200, h: 48 };
+      const inBtn = (btn) => cx >= btn.x && cx <= btn.x + btn.w && cy >= btn.y && cy <= btn.y + btn.h;
+      if (inBtn(RETRY_BTN)) {
+        this.inputState.space = true;
+      } else if (inBtn(TITLE_BTN)) {
+        this.inputState.titleReturn = true;
+      }
+    }
   }
 
   // =============================================

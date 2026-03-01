@@ -308,7 +308,7 @@ export class Game {
   transitionTo(newState) {
     switch (newState) {
       case 'COUNTDOWN':
-        this.audio.fadeOutBgm(400);
+        this.audio.stopBgm();
         this.pitcher.reset();
         this.ball = null;
         this.ballFlight = null;

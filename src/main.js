@@ -74,7 +74,7 @@ loader.load((loaded, total) => {
   // タイトル BGM 再生（自動再生ポリシーでブロックされる場合あり）
   audioManager.playBgm('bgm_title', { maxLoops: 1 });
 
-  // モバイル音声アンロック
+  // 音声アンロック
   const unlockAudio = () => audioManager.unlock();
 
   // モバイルタッチ入力

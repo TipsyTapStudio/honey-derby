@@ -340,7 +340,7 @@ export class Game {
   returnToTitle() {
     this.resetGame();
     this.state = 'READY';
-    this.audio.playBgm('bgm_title');
+    this.audio.playBgm('bgm_title', { maxLoops: 1 });
   }
 
   /**

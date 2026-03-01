@@ -72,12 +72,12 @@ loader.load((loaded, total) => {
   window.addEventListener('keyup', (e) => game.handleKeyUp(e));
 
   // タイトル BGM 再生（自動再生ポリシーでブロックされる場合あり）
-  audioManager.playBgm('bgm_title');
+  audioManager.playBgm('bgm_title', { maxLoops: 1 });
 
   // 初回ユーザー操作で音声アンロック + BGM 再生を保証
   const startBgmOnce = () => {
     audioManager.unlock();
-    if (game.state === 'READY') audioManager.playBgm('bgm_title');
+    if (game.state === 'READY') audioManager.playBgm('bgm_title', { maxLoops: 1 });
   };
 
   // モバイル音声アンロック + タッチ入力

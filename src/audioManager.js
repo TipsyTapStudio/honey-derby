@@ -157,14 +157,44 @@ export class AudioManager {
   /**
    * Play a BGM track with loop.
    * @param {string} name - BGM identifier (e.g., 'bgm_title')
+   * @param {object} [options] - { maxLoops?: number } — 省略 or 0 で無限ループ
    */
-  playBgm(name) {
+  playBgm(name, options = {}) {
     if (!this.enabled || !this.bgm[name]) return;
     // 同じ BGM が再生中ならスキップ
     if (this.currentBgm === name) return;
     this.stopBgm();
     const audio = this.bgm[name];
-    audio.loop = true;
+    const maxLoops = options.maxLoops || 0; // 0 = 無限
+
+    // ループカウント管理用リスナーをクリーンアップ
+    if (this._bgmEndedHandler) {
+      audio.removeEventListener('ended', this._bgmEndedHandler);
+      this._bgmEndedHandler = null;
+    }
+
+    if (maxLoops > 0) {
+      // N 回ループ後にフェードアウトして停止
+      let loopCount = 0;
+      audio.loop = false;
+      this._bgmEndedHandler = () => {
+        loopCount++;
+        if (loopCount >= maxLoops) {
+          // 最終ループ終了 → 停止
+          audio.removeEventListener('ended', this._bgmEndedHandler);
+          this._bgmEndedHandler = null;
+          if (this.currentBgm === name) this.currentBgm = null;
+        } else {
+          // まだループ回数残り → 先頭から再生
+          audio.currentTime = 0;
+          audio.play().catch(() => {});
+        }
+      };
+      audio.addEventListener('ended', this._bgmEndedHandler);
+    } else {
+      audio.loop = true;
+    }
+
     audio.volume = Math.min(1, this.bgmVolume * this.volume);
     audio.currentTime = 0;
     audio.play().catch(() => {});
@@ -178,6 +208,11 @@ export class AudioManager {
     if (!this.currentBgm) return;
     const audio = this.bgm[this.currentBgm];
     if (audio) {
+      // ループカウント用リスナーをクリーンアップ
+      if (this._bgmEndedHandler) {
+        audio.removeEventListener('ended', this._bgmEndedHandler);
+        this._bgmEndedHandler = null;
+      }
       audio.pause();
       audio.currentTime = 0;
     }

@@ -43,12 +43,12 @@ honey-derby/
 │   ├── heartbeat.js      # パワーゲージ（72BPM 心拍サイン波）
 │   ├── resultDisplay.js  # 結果テキスト表示
 │   ├── assetLoader.js    # Promise ベースのアセットプリロード
-│   └── audioManager.js   # サウンド管理（未実装・v0.2予定）
+│   └── audioManager.js   # サウンド管理（SE 13種 + BGM）
 ├── assets/
 │   ├── batter/           # スイングスプライト (swing_01〜11.png)
 │   ├── bg/               # 背景画像 (day/night, moai有無)
 │   ├── title/            # タイトル画像
-│   └── audio/            # SE（未実装）
+│   └── audio/            # SE (13 MP3) + BGM (1 OGG)
 ├── sim/
 │   └── simulate.js       # ヒット判定シミュレーション用ユーティリティ
 └── docs/
@@ -107,8 +107,11 @@ requestAnimationFrame(loop) → update(dt) → render()
 ### ステートマシン
 ```
 READY → COUNTDOWN → PITCHING → RESULT → GAME_OVER
+                    ↕ (PAUSE: any gameplay state)
 ```
 - 状態遷移は `game.js` の `transitionTo(newState)` で管理
+- PAUSE は独立フラグ (`game.paused`)。ゲームループの `update()` をスキップ、`render()` のみ実行
+- PAUSE 中は右上「||」ボタン or Escape キーでトグル。RESUME / TITLE ボタン表示
 
 ### 設計原則
 - **定数の一元管理**: ゲームパラメータはすべて `constants.js` に集約
@@ -196,6 +199,15 @@ batter.x += (targetX - batter.x) * t;
 ```
 - 直接位置セットは「軽すぎる」→ 指数スムージングで「重量感」を演出
 - `Math.exp(-k*dt)` でフレームレート非依存（60fps でも 30fps でも同じ体感）
+
+### サウンドシステム (`audioManager.js`)
+- **SE**: `SOUND_MANIFEST` に 13 効果音を登録。`cloneNode()` で同時再生対応
+- **BGM**: `BGM_MANIFEST` に登録。単一 Audio 要素を使い回し
+- `playBgm(name, { maxLoops })` — `maxLoops: 1` で1回再生、0 で無限ループ
+- `stopBgm()` — 全 BGM 要素を無条件 pause（iOS 対策で defensive に実装）
+- **iOS 音声制限**: `unlock()` で `AudioContext.resume()` を呼ぶ。ユーザー操作イベント内で実行必須
+- **教訓**: `audio.play()` の Promise 失敗時に状態（`currentBgm`）をリセットしないとリトライがブロックされる
+- BGM 素材: しーでんでん（seadenden-8bit.com）— クレジット URL 要（商用 OK）
 
 ## 触らないでほしいファイル・注意事項
 - **`assets/` 内の画像ファイル** — 外部ツールで作成済み。コードから変更・上書きしない
